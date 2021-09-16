@@ -13,7 +13,7 @@ spring:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   data:
     mongodb:
-      uri: mongodb+srv://gantradeuser:F8nNACoHva5jX1Pw@cluster0.ro68e.mongodb.net/gantrade
+      uri: ${GANTRADE_APP_DATABASE_URL}
 logging:
   level:
     org.springframework: ERROR
@@ -61,5 +61,5 @@ app:
       maxRetry: 3
   telegram:
     active: false
-    username: gantrade_bot
-    token: 1228454277:AAFyB5xkp46atD1dpoyxePBewofvkMmtSPQ
+    username: ${GANTRADE_APP_TELEGRAM_USERNAME}
+    token: ${GANTRADE_APP_TELEGRAM_TOKEN}
