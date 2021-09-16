@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: GanTrade
+  resources:
+    add-mappings: false
+  mvc:
+    throw-exception-if-no-handler-found: true
+  http:
+    encoding:
+      force: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  data:
+    mongodb:
+      uri: mongodb+srv://gantradeuser:F8nNACoHva5jX1Pw@cluster0.ro68e.mongodb.net/gantrade
+logging:
+  level:
+    org.springframework: ERROR
+    com.gant: DEBUG
+keycloak:
+  realm: GanTrade
+  auth-server-url: http://95.217.221.87:8280/auth
+  ssl-required: NONE
+  resource: gantrade-spring-boot
+  bearer-only: true
+  credentials:
+    secret: cd915ce8-e771-4c21-a566-bd7b3392ffa0
+  use-resource-role-mappings: true
+  principal-attribute: preferred_username
+  security-constraints:
+    - auth-roles:
+        - ROLE_ADMIN
+      security-collections:
+        - name: role admin
+          patterns:
+            - /admin
+    - auth-roles:
+        - ROLE_USER
+      security-collections:
+        - name: role user
+          patterns:
+            - /**
+server:
+  host: localhost
+  port: 8080
+  max-http-header-size: 20000
+  servlet:
+    context-path: /
+openapi:
+  ganTrade:
+    base-path: /
+app:
+  jackson:
+    date-format: yyyy-MM-dd
+    date-time-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+  bot:
+    config:
+      healthCheck: 5
+      retryInSecond: 1
+      maxRetry: 3
+  telegram:
+    active: false
+    username: gantrade_bot
+    token: 1228454277:AAFyB5xkp46atD1dpoyxePBewofvkMmtSPQ
