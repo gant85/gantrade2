@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -30,6 +32,7 @@ public class TradeStrategySchedulerService {
 
     @Scheduled(fixedRate = 60000)
     public void checkCandlestickSubscriptions() {
+        List<TradeStrategyService> strategyReboot = new ArrayList<>();
         for (TradeStrategyService tradeStrategyService : strategyService.getActiveTradeStrategyService()) {
             if (tradeStrategyService.getCandlestickEventLastTimes() != null && !tradeStrategyService.getCandlestickEventLastTimes().isEmpty()) {
                 boolean isNotAlive = false;
@@ -41,18 +44,25 @@ public class TradeStrategySchedulerService {
                     }
                 }
                 if (isNotAlive) {
-                    String message = String.format("%s sleepy. Restart bot.", tradeStrategyService.getStrategyTO().getName());
-
-                    UserTO user = userService.getUserById(tradeStrategyService.getStrategyTO().getUserId());
-                    telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(), message);
-                    log.warn(message);
-                    BotStrategy botStrategy = new BotStrategy();
-                    botStrategy.setStrategyName(tradeStrategyService.getStrategyTO().getName());
-                    botStrategy.setDebug(tradeStrategyService.isDebug());
-                    strategyService.stopBot(botStrategy);
-                    strategyService.startBot(botStrategy);
+                    strategyReboot.add(tradeStrategyService);
                 }
             }
         }
+        rebootStrategy(strategyReboot);
+    }
+
+    private void rebootStrategy(List<TradeStrategyService> tradeStrategyServiceList) {
+        tradeStrategyServiceList.forEach(tradeStrategyService -> {
+            String message = String.format("%s sleepy. Restart bot.", tradeStrategyService.getStrategyTO().getName());
+
+            UserTO user = userService.getUserById(tradeStrategyService.getStrategyTO().getUserId());
+            telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(), message);
+            log.warn(message);
+            BotStrategy botStrategy = new BotStrategy();
+            botStrategy.setStrategyName(tradeStrategyService.getStrategyTO().getName());
+            botStrategy.setDebug(tradeStrategyService.isDebug());
+            strategyService.stopBot(botStrategy);
+            strategyService.startBot(botStrategy);
+        });
     }
 }
