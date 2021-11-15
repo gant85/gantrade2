@@ -7,12 +7,15 @@ import com.gant.trade.domain.mapper.StrategyMapper;
 import com.gant.trade.domain.mapper.TradeMapper;
 import com.gant.trade.mongo.service.StrategyService;
 import com.gant.trade.mongo.service.TradeService;
+import com.gant.trade.rest.model.BotStrategy;
+import com.gant.trade.rest.model.StrategyStatus;
+import com.gant.trade.rest.model.StrategyStatusInfoTO;
 import com.gant.trade.service.TelegramBotService;
 import com.gant.trade.service.TradeStrategyService;
-import com.gant.trade.rest.model.*;
 import com.gant.trade.utility.SymbolInfoUtil;
 import com.gant.trade.utility.constant.TelegramBotConstant;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,8 +30,10 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.lang.StrictMath.toIntExact;
 
@@ -60,7 +65,6 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
 
     @Override
     public void onUpdateReceived(Update update) {
-
         if (update.hasMessage() && update.getMessage().hasText()) {
             checkCommand(update);
         } else if (update.hasCallbackQuery()) {
@@ -88,7 +92,7 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
                 Trade trade = tradeService.getTradeBySeqId(Long.valueOf(message[1]));
                 SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
                 boolean isStrategyStarted = false;
-                for (TradeStrategyService tradeStrategyService : StrategyService.getActiveTradeStrategyService()) {
+                for (TradeStrategyService tradeStrategyService : strategyService.getActiveTradeStrategyService()) {
                     if (trade.getStrategyId() == tradeStrategyService.getStrategyTO().getSeqId()) {
                         tradeStrategyService.closeOrderManually(symbolInfo, trade);
                         updateMessage("Closing Order", chatId, messageId);
@@ -98,6 +102,18 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
                 if (!isStrategyStarted)
                     updateMessage("Strategy not started. Run Strategy and try again.", chatId, messageId);
 
+                break;
+            }
+            case TelegramBotConstant.STRATEGY_STATUS_INFO: {
+                List<StrategyStatusInfoTO> strategyStatusInfoTOList = strategyService.getStrategyStatusInfo(Long.parseLong(message[1]));
+                String text = strategyStatusInfoTOList.stream().map(strategyStatusInfoTO -> {
+                    String price = "Price: " + strategyStatusInfoTO.getPrice() + "\n";
+                    String rsi = strategyStatusInfoTO.getRsi().stream().map(rsiTO -> "RSI | Period: " + rsiTO.getPeriod() + " Value: " + rsiTO.getValue()).collect(Collectors.joining("\n"));
+                    String volume = "\nVolume: " + strategyStatusInfoTO.getVolume() + "\n";
+                    String orders = strategyStatusInfoTO.getOrders().stream().map(orderTO -> orderTO.getInsertionTime().format(DateTimeFormatter.ofPattern("dd/MM HH:mm:ss")) + " " + orderTO.getSide() + " " + orderTO.getSymbolInfo().getBaseAsset() + " " + orderTO.getPrice()).collect(Collectors.joining("\n")) + "\n";
+                    return price + rsi + volume + orders;
+                }).collect(Collectors.joining("\n\n"));
+                updateMessage(StringUtils.defaultIfBlank(text, "Strategy not started."), chatId, messageId);
                 break;
             }
             default:
@@ -111,14 +127,19 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
             long chatId = update.getMessage().getChatId();
             switch (message[0]) {
                 case TelegramBotConstant.START:
-                    sendMessage(String.valueOf(chatId),String.format("Il tuo Chat ID:%n %s",chatId));
+                    sendMessage(String.valueOf(chatId), String.format("Il tuo Chat ID:%n %s", chatId));
                     break;
                 case TelegramBotConstant.HELP:
-                    sendMessageToGanTradeBot(String.valueOf(chatId),String.join("\n", TelegramBotConstant.COMMAND_LIST));
+                    sendMessageToGanTradeBot(String.valueOf(chatId), String.join("\n", TelegramBotConstant.COMMAND_LIST));
                     break;
-                case TelegramBotConstant.STATUS:
-                    sendMessageToGanTradeBot(String.valueOf(chatId),"I'm alive!");
+                case TelegramBotConstant.STATUS: {
+                    StringBuilder text = new StringBuilder("I'm alive!");
+                    strategyService.getActiveTradeStrategyService().forEach(tradeStrategyService -> {
+                        text.append("\n").append(tradeStrategyService.getStrategyTO().getName()).append(tradeStrategyService.status() ? " is online." : " is offline.");
+                    });
+                    sendMessageToGanTradeBot(String.valueOf(chatId), text.toString());
                     break;
+                }
                 case TelegramBotConstant.AUTOMATION_START:
                     if (message.length > 1) {
                         String strategyId = message[1];
@@ -127,7 +148,7 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
                         bot.setDebug(false);
                         strategyService.startBot(bot);
                     } else {
-                        sendMessageToGanTradeBot(String.valueOf(chatId),"Error start strategy empty");
+                        sendMessageToGanTradeBot(String.valueOf(chatId), "Error start strategy empty");
                     }
                     break;
                 case TelegramBotConstant.AUTOMATION_STOP:
@@ -138,7 +159,7 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
                         bot.setDebug(false);
                         strategyService.stopBot(bot);
                     } else {
-                        sendMessageToGanTradeBot(String.valueOf(chatId),"Error stop strategy empty");
+                        sendMessageToGanTradeBot(String.valueOf(chatId), "Error stop strategy empty");
                     }
                     break;
                 case TelegramBotConstant.AUTOMATION_LIST:
@@ -175,7 +196,7 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
     @Override
     public void sendMessage(String chatId, String text) {
         try {
-            if(chatId==null || chatId.isEmpty())
+            if (chatId == null || chatId.isEmpty())
                 return;
 
             SendMessage sendMessage = new SendMessage();
@@ -204,10 +225,10 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
 
             switch (command) {
                 case TelegramBotConstant.AUTOMATION_LIST:
-                    buildButtonListStrategy(rowsInline,chatId);
+                    buildButtonListStrategy(rowsInline, chatId);
                     break;
                 case TelegramBotConstant.OPEN_ORDER:
-                    buildButtonListOrder(rowsInline,chatId);
+                    buildButtonListOrder(rowsInline, chatId);
                     break;
                 default:
                     break;
@@ -227,26 +248,29 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
 
     }
 
-    private void buildButtonListStrategy(List<List<InlineKeyboardButton>> rowsInline,String chatId) {
+    private void buildButtonListStrategy(List<List<InlineKeyboardButton>> rowsInline, String chatId) {
         List<Strategy> strategyList = strategyService.findStrategyByChatId(chatId);
         strategyList.forEach(s -> {
-            InlineKeyboardButton button = new InlineKeyboardButton();
             StrategyStatus status = StrategyStatus.ACTIVE.equals(s.getStatus()) && strategyService.strategyStatus(s.getSeqId())
                     ? StrategyStatus.ACTIVE : StrategyStatus.DISABLE;
 
-            String format="%s %s";
-            String command = StrategyStatus.ACTIVE.equals(status)
-                    ? String.format(format, TelegramBotConstant.AUTOMATION_STOP, s.getSeqId())
-                    : String.format(format, TelegramBotConstant.AUTOMATION_START, s.getSeqId());
-            button.setCallbackData(String.format(format, TelegramBotConstant.CALLBACK_STATUS_AUTOMATION, command));
-            button.setText(String.format("%s%n(%s)", s.getName(), status.name()));
             List<InlineKeyboardButton> rowInline = new ArrayList<>();
-            rowInline.add(button);
+
+            InlineKeyboardButton strategyNameButton = new InlineKeyboardButton();
+            strategyNameButton.setCallbackData(String.format("%s %s", TelegramBotConstant.STRATEGY_STATUS_INFO, s.getSeqId()));
+            strategyNameButton.setText(s.getName());
+            rowInline.add(strategyNameButton);
+
+            InlineKeyboardButton strategyStartStopButton = new InlineKeyboardButton();
+            strategyStartStopButton.setCallbackData(String.format("%s %s %s", TelegramBotConstant.CALLBACK_STATUS_AUTOMATION, StrategyStatus.ACTIVE.equals(status) ? TelegramBotConstant.AUTOMATION_STOP : TelegramBotConstant.AUTOMATION_START, s.getSeqId()));
+            strategyStartStopButton.setText(StrategyStatus.ACTIVE.equals(status) ? "ACTIVATED" : "DISABLED");
+            rowInline.add(strategyStartStopButton);
+
             rowsInline.add(rowInline);
         });
     }
 
-    private void buildButtonListOrder(List<List<InlineKeyboardButton>> rowsInline,String chatId) {
+    private void buildButtonListOrder(List<List<InlineKeyboardButton>> rowsInline, String chatId) {
         List<Trade> list = tradeService.getOpenOrderByChatId(chatId);
 
         list.forEach(trade -> {

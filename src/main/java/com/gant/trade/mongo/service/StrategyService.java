@@ -41,7 +41,7 @@ public class StrategyService {
     @Autowired
     private SequenceGeneratorService sequenceGeneratorService;
 
-    private static Map<Long, TradeStrategyService> tradeStrategyServiceMap = new HashMap<>();
+    private static final Map<Long, TradeStrategyService> tradeStrategyServiceMap = new HashMap<>();
 
     public boolean botStatus() {
         return !tradeStrategyServiceMap.isEmpty() && tradeStrategyServiceMap.values().stream().allMatch(TradeStrategyService::status);
@@ -52,7 +52,18 @@ public class StrategyService {
         return tradeStrategyService != null && tradeStrategyService.status();
     }
 
-    public static Collection<TradeStrategyService> getActiveTradeStrategyService() {
+    public List<StrategyStatusInfoTO> getStrategyStatusInfo(Long id) {
+        TradeStrategyService tradeStrategyService = tradeStrategyServiceMap.get(id);
+        if (tradeStrategyService != null && tradeStrategyService.status()) {
+            return tradeStrategyService.getStrategyStatusInfoToList();
+        }
+        return Collections.emptyList();
+    }
+
+    public Collection<TradeStrategyService> getActiveTradeStrategyService() {
+        if (tradeStrategyServiceMap.isEmpty()) {
+            return Collections.emptyList();
+        }
         return tradeStrategyServiceMap.values();
     }
 
@@ -91,7 +102,7 @@ public class StrategyService {
         if (strategy == null) {
             throw new StrategyNotFoundException();
         }
-        //TODO rimuovere in futuro, troppe strategie non vanno bene nell'hashmap
+        // TODO rimuovere in futuro, troppe strategie non vanno bene nell'hashmap
         TradeStrategyService tradeStrategyService = tradeStrategyServiceMap.get(strategy.getSeqId());
         if (tradeStrategyService != null) {
             tradeStrategyService.stop();
@@ -104,17 +115,16 @@ public class StrategyService {
     }
 
     private void runStrategy(BotStrategy botStrategy, Strategy strategy) {
-        switch (strategy.getExchange()){
+        switch (strategy.getExchange()) {
             case BINANCE:
                 TradeStrategyService tradeStrategyService = new TradeStrategyBinanceService(applicationContext, botStrategy.getDebug());
                 User user = userRepository.findBySeqId(strategy.getUserId());
-                tradeStrategyService.start(strategyMapper.convert(strategy),user);
+                tradeStrategyService.start(strategyMapper.convert(strategy), user);
                 tradeStrategyServiceMap.put(strategy.getSeqId(), tradeStrategyService);
                 break;
             case COINBASE:
                 break;
         }
-
     }
 
     public boolean stopBot(BotStrategy botStrategy) {
@@ -140,7 +150,7 @@ public class StrategyService {
         return stopped;
     }
 
-    public StrategyListTO strategyList(Integer userId,Integer pageSize, Integer pageIndex) {
+    public StrategyListTO strategyList(Integer userId, Integer pageSize, Integer pageIndex) {
         if (pageIndex == null) {
             pageIndex = 0;
         }
@@ -148,7 +158,7 @@ public class StrategyService {
             pageSize = 10;
         }
         Pageable pageable = PageRequest.of(pageIndex, pageSize);
-        Page<Strategy> page = strategyRepository.findByUserId(userId,pageable);
+        Page<Strategy> page = strategyRepository.findByUserId(userId, pageable);
         Pagination pagination = new Pagination();
         pagination.setPageSize(page.getSize());
         pagination.setIsLastPage(!page.hasNext());
@@ -161,7 +171,7 @@ public class StrategyService {
     }
 
     public StrategySimulationResponse strategySimulation(StrategySimulationRequest strategySimulationRequest) {
-        switch (strategySimulationRequest.getExchange()){
+        switch (strategySimulationRequest.getExchange()) {
             case BINANCE:
                 return tradeStrategySimulationService.simulation(strategySimulationRequest);
             case COINBASE:
@@ -169,7 +179,6 @@ public class StrategyService {
             default:
                 return null;
         }
-
     }
 
     public StrategyTO updateStrategyById(Long id, StrategyTO strategyTO) {
@@ -178,7 +187,7 @@ public class StrategyService {
         if (strategy == null) {
             throw new StrategyNotFoundException();
         } else if (!strategyTO.getName().equalsIgnoreCase(strategy.getName()) && getStrategyByName(strategyTO.getName()) != null) {
-                throw new StrategyAlreadyExistException();
+            throw new StrategyAlreadyExistException();
         }
 
         Strategy newStrategy = strategyMapper.convert(strategyTO);
@@ -196,13 +205,13 @@ public class StrategyService {
         }
     }
 
-    public List<Strategy> findByUserId(User user){
+    public List<Strategy> findByUserId(User user) {
         return strategyRepository.findByUserId(user.getSeqId());
     }
 
-    public List<Strategy> findStrategyByChatId(String chatId){
+    public List<Strategy> findStrategyByChatId(String chatId) {
         User user = userRepository.findByTelegramId(chatId);
-        if(user != null) {
+        if (user != null) {
             return strategyRepository.findByUserId(user.getSeqId());
         } else {
             return new ArrayList<>();
@@ -210,15 +219,12 @@ public class StrategyService {
 
     }
 
-    public List<Strategy> findStrategyActive(){
+    public List<Strategy> findStrategyActive() {
         List<Strategy> strategies = strategyRepository.findByStatus(StrategyStatus.ACTIVE.toString());
-        if(strategies != null) {
+        if (strategies != null) {
             return strategies;
         } else {
             return new ArrayList<>();
         }
-
     }
-
-
 }

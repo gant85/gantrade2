@@ -1,9 +1,9 @@
 package com.gant.trade.mongo.service;
 
 import com.gant.trade.config.BotConfig;
+import com.gant.trade.rest.model.BotStrategy;
 import com.gant.trade.rest.model.UserTO;
 import com.gant.trade.service.TelegramBotService;
-import com.gant.trade.rest.model.BotStrategy;
 import com.gant.trade.service.TradeStrategyService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +30,7 @@ public class TradeStrategySchedulerService {
 
     @Scheduled(fixedRate = 60000)
     public void checkCandlestickSubscriptions() {
-        for (TradeStrategyService tradeStrategyService : StrategyService.getActiveTradeStrategyService()) {
+        for (TradeStrategyService tradeStrategyService : strategyService.getActiveTradeStrategyService()) {
             if (tradeStrategyService.getCandlestickEventLastTimes() != null && !tradeStrategyService.getCandlestickEventLastTimes().isEmpty()) {
                 boolean isNotAlive = false;
                 for (String symbolInfo : tradeStrategyService.getCandlestickEventLastTimes().keySet()) {
@@ -44,7 +44,7 @@ public class TradeStrategySchedulerService {
                     String message = String.format("%s sleepy. Restart bot.", tradeStrategyService.getStrategyTO().getName());
 
                     UserTO user = userService.getUserById(tradeStrategyService.getStrategyTO().getUserId());
-                    telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(),message);
+                    telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(), message);
                     log.warn(message);
                     BotStrategy botStrategy = new BotStrategy();
                     botStrategy.setStrategyName(tradeStrategyService.getStrategyTO().getName());

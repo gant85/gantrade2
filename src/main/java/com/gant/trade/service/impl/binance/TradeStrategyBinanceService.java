@@ -5,25 +5,21 @@ import com.gant.binance.api.client.BinanceApiRestClient;
 import com.gant.binance.api.client.BinanceApiWebSocketClient;
 import com.gant.binance.api.client.domain.event.CandlestickEvent;
 import com.gant.binance.api.client.domain.market.CandlestickInterval;
-
 import com.gant.trade.config.BotConfig;
 import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.model.Timeframe;
 import com.gant.trade.model.TradeDirection;
+import com.gant.trade.mongo.service.TradeService;
 import com.gant.trade.mongo.service.UserService;
-import com.gant.trade.rest.model.ExchangeConfiguration;
-import com.gant.trade.rest.model.UserTO;
+import com.gant.trade.rest.model.*;
 import com.gant.trade.service.TelegramBotService;
 import com.gant.trade.service.TradeStrategyService;
-import com.gant.trade.mongo.service.TradeService;
 import com.gant.trade.utility.BarMerger;
 import com.gant.trade.utility.BarSeriesUtil;
 import com.gant.trade.utility.SymbolInfoUtil;
 import com.gant.trade.utility.TradeStrategyServiceUtil;
-import com.gant.trade.rest.model.Exchange;
-import com.gant.trade.rest.model.StrategyTO;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.context.ApplicationContext;
@@ -31,6 +27,9 @@ import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.Strategy;
 import org.ta4j.core.TradingRecord;
+import org.ta4j.core.indicators.RSIIndicator;
+import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
+import org.ta4j.core.indicators.helpers.VolumeIndicator;
 import org.ta4j.core.num.DecimalNum;
 
 import java.io.Closeable;
@@ -38,9 +37,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -108,12 +105,12 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
         return stopped.get();
     }
 
-    public void start(StrategyTO strategyTO,User user) {
+    public void start(StrategyTO strategyTO, User user) {
         try {
             MDC.put("StrategyName", strategyTO.getName());
             if (binanceApiRestClient == null && binanceApiWebSocketClient == null) {
-                ExchangeConfiguration userExchange = TradeStrategyServiceUtil.getExchangeConfigurationByExchange(user,Exchange.BINANCE);
-                if(userExchange!=null) {
+                ExchangeConfiguration userExchange = TradeStrategyServiceUtil.getExchangeConfigurationByExchange(user, Exchange.BINANCE);
+                if (userExchange != null) {
                     BinanceApiClientFactory binanceApiClientFactory = BinanceApiClientFactory.newInstance(userExchange.getApiKey(), userExchange.getSecretKey());
                     binanceApiRestClient = binanceApiClientFactory.newRestClient();
                     binanceApiWebSocketClient = binanceApiClientFactory.newWebSocketClient();
@@ -125,7 +122,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
             this.candleMerger = new HashMap<>();
             this.candlestickEventLastTimes = new HashMap<>();
             this.currencies = strategyTO.getSymbolInfo().stream().map(currency ->
-                    symbolInfoUtil.getSymbolInfoByExchange(strategyTO.getExchange(),strategyTO.getUserId(),currency.getSymbol(),currency.getOrderSize().doubleValue()))
+                            symbolInfoUtil.getSymbolInfoByExchange(strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize().doubleValue()))
                     .collect(Collectors.toList());
 
             this.barSeries = new HashMap<>();
@@ -143,15 +140,15 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
             log.error("{} Got exception", strategyTO.getName(), e);
 
             try {
-                if(botConfig.getMaxRetry() > maxRetry) {
+                if (botConfig.getMaxRetry() > maxRetry) {
                     TimeUnit.SECONDS.sleep(botConfig.getRetryInSecond());
                     maxRetry++;
-                    if(user != null) {
-                        telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(),strategyTO.getName() + " Got exception: " + e.getMessage());
+                    if (user != null) {
+                        telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(), strategyTO.getName() + " Got exception: " + e.getMessage());
                     }
                     start(strategyTO, user);
-                } else if(user != null) {
-                    telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(),"Error with starting strategy " + strategyTO.getName() + "\n" + e.getMessage());
+                } else if (user != null) {
+                    telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(), "Error with starting strategy " + strategyTO.getName() + "\n" + e.getMessage());
                 }
             } catch (InterruptedException ie) {
                 log.error("{} Got InterruptedException", strategyTO.getName(), ie);
@@ -163,14 +160,14 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
     public void registerCandles() {
         log.info("{} Register candles", strategyTO.getName());
         candlestickSubscriptions = currencies.stream().map(currency -> {
-            candleMerger.put(currency.getSymbol(), new BarMerger(currency, timeframe, strategyTO.getCheckRulesEveryTime(), strategyTO.getCheckRulesEveryTimeValue(), this::barDoneCallback));
+                    candleMerger.put(currency.getSymbol(), new BarMerger(currency, timeframe, strategyTO.getCheckRulesEveryTime(), strategyTO.getCheckRulesEveryTimeValue(), this::barDoneCallback));
 
-            return binanceApiWebSocketClient.onCandlestickEvent(
-                    currency.getSymbol().toLowerCase(),
-                    CandlestickInterval.valueOf(timeframe.name()),
-                    candlestickEvent -> handleCandlestickCallback(currency, candlestickEvent)
-            );
-        })
+                    return binanceApiWebSocketClient.onCandlestickEvent(
+                            currency.getSymbol().toLowerCase(),
+                            CandlestickInterval.valueOf(timeframe.name()),
+                            candlestickEvent -> handleCandlestickCallback(currency, candlestickEvent)
+                    );
+                })
                 .collect(Collectors.toList());
     }
 
@@ -181,8 +178,8 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
         } catch (Exception e) {
             log.error("Got an exception while executing order", e);
             UserTO user = userService.getUserById(strategyTO.getUserId());
-            if(user != null) {
-                telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(),"Got an exception while executing order: " + e.getMessage());
+            if (user != null) {
+                telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(), "Got an exception while executing order: " + e.getMessage());
             }
         }
     }
@@ -206,14 +203,14 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
 
     public void openOrder(SymbolInfo symbolInfo, final Bar bar) {
         log.info("{} openOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
-        Trade trade = new Trade(strategyTO.getSeqId(),strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), symbolInfo.getOrderSize());
-        tradeService.addTradeToOpenTradeList(trades, trade,symbolInfo.getOrderSize());
-        orderBinanceService.openTrade(binanceApiRestClient, trade, bar,symbolInfo.getOrderSize(), debug);
+        Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), symbolInfo.getOrderSize());
+        tradeService.addTradeToOpenTradeList(trades, trade, symbolInfo.getOrderSize());
+        orderBinanceService.openTrade(binanceApiRestClient, trade, bar, symbolInfo.getOrderSize(), debug);
     }
 
     public void closeOrder(SymbolInfo symbolInfo, final Bar bar, final Trade openTrade) {
         log.info("{} closeOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
-        orderBinanceService.closeTrade(binanceApiRestClient, openTrade, bar,symbolInfo.getOrderSize(), debug);
+        orderBinanceService.closeTrade(binanceApiRestClient, openTrade, bar, symbolInfo.getOrderSize(), debug);
         tradeService.removeTradeToOpenTradeList(trades, openTrade);
     }
 
@@ -247,7 +244,44 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
         return timeframe;
     }
 
+    @Override
     public boolean isDebug() {
         return debug;
+    }
+
+    @Override
+    public List<StrategyStatusInfoTO> getStrategyStatusInfoToList() {
+        return currencies.stream().map(symbolInfo -> {
+            StrategyStatusInfoTO strategyStatusInfoTO = new StrategyStatusInfoTO();
+            String price = binanceApiRestClient.getPrice(symbolInfo.getSymbol()).getPrice();
+            strategyStatusInfoTO.setPrice(Double.parseDouble(price));
+            strategyStatusInfoTO.setRsi(new ArrayList<>());
+            BarSeries bs = barSeries.get(symbolInfo.getSymbol());
+            ClosePriceIndicator closePriceIndicator = new ClosePriceIndicator(bs);
+            List<IndicatorTO> rsiIndicators = strategyTO.getRules().stream()
+                    .map(ruleTO -> ruleTO.getCondition().getIndicators().stream()
+                            .filter(indicatorTO -> IndicatorTypeEnum.RSI.equals(indicatorTO.getType()) && indicatorTO.getIndicatorTypeRef() == null)
+                            .collect(Collectors.toList())).flatMap(Collection::stream).distinct().collect(Collectors.toList());
+            for (IndicatorTO indicatorTO : rsiIndicators) {
+                RSIIndicator rsiIndicator = new RSIIndicator(closePriceIndicator, indicatorTO.getPeriod().intValue());
+                RSITO rsiTO = new RSITO();
+                rsiTO.setPeriod(indicatorTO.getPeriod().intValue());
+                rsiTO.setValue(rsiIndicator.getValue(bs.getEndIndex()).doubleValue());
+                strategyStatusInfoTO.getRsi().add(rsiTO);
+            }
+            if (strategyStatusInfoTO.getRsi().isEmpty()) {
+                RSIIndicator rsiIndicator = new RSIIndicator(closePriceIndicator, 14);
+                RSITO rsiTO = new RSITO();
+                rsiTO.setPeriod(14);
+                rsiTO.setValue(rsiIndicator.getValue(bs.getEndIndex()).doubleValue());
+                strategyStatusInfoTO.getRsi().add(rsiTO);
+            }
+            VolumeIndicator volumeIndicator = new VolumeIndicator(bs, 20); // TODO add volume to IndicatorTypeEnum
+            strategyStatusInfoTO.setVolume(volumeIndicator.getValue(bs.getEndIndex()).doubleValue());
+
+            strategyStatusInfoTO.setOrders(tradeService.getOpenOrderByCurrencyAndStrategySeqId(symbolInfo.getSymbol(), strategyTO.getSeqId()));
+
+            return strategyStatusInfoTO;
+        }).collect(Collectors.toList());
     }
 }
