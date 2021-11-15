@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 
 import java.util.List;
 
-@Mapper
+@Mapper(uses = OrderMapper.class)
 public interface TradeMapper {
 
     Trade convert(TradeTO source);

@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 public class BotApiDelegateImpl implements BotApiDelegate {
@@ -19,11 +21,10 @@ public class BotApiDelegateImpl implements BotApiDelegate {
     @Override
     public ResponseEntity<Void> botStatus() {
         log.info("Starting interaction: botStatus");
-        if (strategyService.botStatus()) {
-            log.info("End interaction: botStatus");
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        ResponseEntity<Void> response = strategyService.botStatus()
+                ? ResponseEntity.noContent().build() : ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        log.info("End interaction: botStatus");
+        return response;
     }
 
     @Override
@@ -74,9 +75,9 @@ public class BotApiDelegateImpl implements BotApiDelegate {
     }
 
     @Override
-    public ResponseEntity<StrategyListTO> strategyList(Integer userId,Integer pageSize, Integer pageIndex) {
+    public ResponseEntity<StrategyListTO> strategyList(Integer userId, Integer pageSize, Integer pageIndex) {
         log.info("Starting interaction: strategyList");
-        StrategyListTO strategyListTO = strategyService.strategyList(userId,pageSize, pageIndex);
+        StrategyListTO strategyListTO = strategyService.strategyList(userId, pageSize, pageIndex);
         log.info("End interaction: strategyList");
         return ResponseEntity.ok(strategyListTO);
     }
@@ -91,9 +92,26 @@ public class BotApiDelegateImpl implements BotApiDelegate {
 
     @Override
     public ResponseEntity<StrategyTO> updateStrategyById(Long id, StrategyTO strategyTO) {
-        log.info("Starting interaction: updateStrategy");
+        log.info("Starting interaction: updateStrategy id={}", id);
         StrategyTO savedStrategyTO = strategyService.updateStrategyById(id, strategyTO);
-        log.info("End interaction: updateStrategy");
+        log.info("End interaction: updateStrategy id={}", id);
         return ResponseEntity.ok(savedStrategyTO);
+    }
+
+    @Override
+    public ResponseEntity<Void> botStrategyStatus(Long id) {
+        log.info("Starting interaction: botStrategyStatus id={}", id);
+        ResponseEntity<Void> response = strategyService.strategyStatus(id)
+                ? ResponseEntity.noContent().build() : ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        log.info("End interaction: botStrategyStatus id={}", id);
+        return response;
+    }
+
+    @Override
+    public ResponseEntity<List<StrategyStatusInfoTO>> getStrategyStatusInfo(Long id) {
+        log.info("Starting interaction: getStrategyStatusInfo id={}", id);
+        List<StrategyStatusInfoTO> strategyStatusInfoTOList = strategyService.getStrategyStatusInfo(id);
+        log.info("End interaction: getStrategyStatusInfo id={}", id);
+        return ResponseEntity.ok(strategyStatusInfoTOList);
     }
 }

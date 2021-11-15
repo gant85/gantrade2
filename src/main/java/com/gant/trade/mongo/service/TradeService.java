@@ -4,6 +4,7 @@ import com.gant.trade.domain.Strategy;
 import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
+import com.gant.trade.domain.mapper.OrderMapper;
 import com.gant.trade.domain.mapper.TradeMapper;
 import com.gant.trade.mongo.repository.StrategyRepository;
 import com.gant.trade.mongo.repository.TradeRepository;
@@ -29,6 +30,9 @@ public class TradeService {
     private TradeMapper tradeMapper;
 
     @Autowired
+    private OrderMapper orderMapper;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -41,9 +45,9 @@ public class TradeService {
         Map<String, List<Trade>> trades = new HashMap<>();
 
         List<Long> ids = Collections.singletonList(stratedyId);
-        tradeRepository.findByTradeStateAndStrategyIdIn(TradeState.OPEN,ids).forEach(trade -> {
+        tradeRepository.findByTradeStateAndStrategyIdIn(TradeState.OPEN, ids).forEach(trade -> {
             SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
-            addTradeToOpenTradeList(trades, trade,symbolInfo.getOrderSize());
+            addTradeToOpenTradeList(trades, trade, symbolInfo.getOrderSize());
         });
 
         return trades;
@@ -78,7 +82,7 @@ public class TradeService {
 
     public TradeTO updateTradeById(Long id, TradeTO tradeTO) {
         Trade trade = tradeRepository.findById(id).orElse(null);
-        if(trade!=null) {
+        if (trade != null) {
             trade.setTradeState(tradeTO.getTradeState());
             Trade tradeSaved = tradeRepository.save(trade);
             return tradeMapper.convert(tradeSaved);
@@ -88,17 +92,17 @@ public class TradeService {
 
     public List<Trade> getOpenOrderByChatId(String chatId) {
         User user = userRepository.findByTelegramId(chatId);
-        if(user != null) {
+        if (user != null) {
             List<Strategy> strategyList = strategyRepository.findByUserId(user.getSeqId());
             List<Long> ids = strategyList.stream().map(Strategy::getSeqId).collect(Collectors.toList());
-            return tradeRepository.findByTradeStateAndStrategyIdIn(TradeState.OPEN,ids);
+            return tradeRepository.findByTradeStateAndStrategyIdIn(TradeState.OPEN, ids);
         } else {
             return new ArrayList<>();
         }
     }
 
-    public void addTradeToOpenTradeList(Map<String, List<Trade>> trades,Trade trade,double orderSize) {
-        SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(trade.getExchange(),trade.getUserId(),trade.getSymbol(),orderSize);
+    public void addTradeToOpenTradeList(Map<String, List<Trade>> trades, Trade trade, double orderSize) {
+        SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
 
         if (!trades.containsKey(symbolInfo.getSymbol())) {
             trades.put(symbolInfo.getSymbol(), new ArrayList<>());
@@ -114,7 +118,7 @@ public class TradeService {
             pageSize = 10;
         }
         Pageable pageable = PageRequest.of(pageIndex, pageSize);
-        Page<Trade> page = tradeRepository.findByUserId(userId,pageable);
+        Page<Trade> page = tradeRepository.findByUserId(userId, pageable);
         Pagination pagination = new Pagination();
         pagination.setPageSize(page.getSize());
         pagination.setIsLastPage(!page.hasNext());
@@ -124,5 +128,14 @@ public class TradeService {
         tradeListTO.setPagination(pagination);
         tradeListTO.setTrades(tradeMapper.convertList(page.getContent()));
         return tradeListTO;
+    }
+
+    public List<OrderTO> getOpenOrderByCurrencyAndStrategySeqId(String currency, Long seqId) {
+        Map<String, List<Trade>> currencyTradeMap = getOpenTradesByStrategy(seqId);
+        if (currencyTradeMap.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return currencyTradeMap.get(currency).stream().map(Trade::getOrders).flatMap(Collection::stream).map(order -> orderMapper.convert(order)).collect(Collectors.toList());
     }
 }

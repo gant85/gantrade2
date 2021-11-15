@@ -10,6 +10,7 @@ public class TelegramBotConstant {
     public static final String AUTOMATION_START = "/automationStart";
     public static final String AUTOMATION_STOP = "/automationStop";
     public static final String AUTOMATION_LIST = "/automationlist";
+    public static final String STRATEGY_STATUS_INFO = "/strategyStatusInfo";
     public static final String OPEN_ORDER = "/openorder";
     public static final String START = "/start";
 

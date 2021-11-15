@@ -176,6 +176,48 @@ paths:
       responses:
         '204':
           description: bot stategy
+  /bot/strategies/{id}/status:
+    get:
+      tags:
+        - bot
+      operationId: botStrategyStatus
+      summary: Get strategy status
+      parameters:
+        - in: path
+          name: id
+          description: strategy id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: strategy up
+        '503':
+          description: strategy down
+  /bot/strategies/{id}/status/info:
+    get:
+      tags:
+        - bot
+      operationId: getStrategyStatusInfo
+      summary: Get Strategy Status Info
+      parameters:
+        - in: path
+          name: id
+          description: strategy id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: bot stategy status info
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StrategyStatusInfoTO'
   /bot/strategies/simulation:
     post:
       tags:
@@ -981,3 +1023,29 @@ components:
       enum:
         - BINANCE
         - COINBASE
+    StrategyStatusInfoTO:
+      type: object
+      properties:
+        price:
+          type: number
+          format: double
+        rsi:
+          type: array
+          items:
+            $ref: '#/components/schemas/RSITO'
+        volume:
+          type: number
+          format: double
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderTO'
+    RSITO:
+      type: object
+      properties:
+        period:
+          type: integer
+          format: int32
+        value:
+          type: number
+          format: double
