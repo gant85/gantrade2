@@ -27,9 +27,6 @@ import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.Strategy;
 import org.ta4j.core.TradingRecord;
-import org.ta4j.core.indicators.RSIIndicator;
-import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
-import org.ta4j.core.indicators.helpers.VolumeIndicator;
 import org.ta4j.core.num.DecimalNum;
 
 import java.io.Closeable;
@@ -37,7 +34,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -52,6 +51,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
     private final HistoricalCandlesBinanceService historicalCandlesBinanceService;
     private final SymbolInfoUtil symbolInfoUtil;
     private final UserService userService;
+    private final StatusInfoService statusInfoService;
 
     private BinanceApiRestClient binanceApiRestClient;
     private BinanceApiWebSocketClient binanceApiWebSocketClient;
@@ -79,6 +79,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
         this.historicalCandlesBinanceService = applicationContext.getBean(HistoricalCandlesBinanceService.class);
         this.symbolInfoUtil = applicationContext.getBean(SymbolInfoUtil.class);
         this.userService = applicationContext.getBean(UserService.class);
+        this.statusInfoService = applicationContext.getBean(StatusInfoService.class);
         this.debug = debug;
     }
 
@@ -251,37 +252,6 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
 
     @Override
     public List<StrategyStatusInfoTO> getStrategyStatusInfoToList() {
-        return currencies.stream().map(symbolInfo -> {
-            StrategyStatusInfoTO strategyStatusInfoTO = new StrategyStatusInfoTO();
-            String price = binanceApiRestClient.getPrice(symbolInfo.getSymbol()).getPrice();
-            strategyStatusInfoTO.setPrice(Double.parseDouble(price));
-            strategyStatusInfoTO.setRsi(new ArrayList<>());
-            BarSeries bs = barSeries.get(symbolInfo.getSymbol());
-            ClosePriceIndicator closePriceIndicator = new ClosePriceIndicator(bs);
-            List<IndicatorTO> rsiIndicators = strategyTO.getRules().stream()
-                    .map(ruleTO -> ruleTO.getCondition().getIndicators().stream()
-                            .filter(indicatorTO -> IndicatorTypeEnum.RSI.equals(indicatorTO.getType()) && indicatorTO.getIndicatorTypeRef() == null)
-                            .collect(Collectors.toList())).flatMap(Collection::stream).distinct().collect(Collectors.toList());
-            for (IndicatorTO indicatorTO : rsiIndicators) {
-                RSIIndicator rsiIndicator = new RSIIndicator(closePriceIndicator, indicatorTO.getPeriod().intValue());
-                RSITO rsiTO = new RSITO();
-                rsiTO.setPeriod(indicatorTO.getPeriod().intValue());
-                rsiTO.setValue(rsiIndicator.getValue(bs.getEndIndex()).doubleValue());
-                strategyStatusInfoTO.getRsi().add(rsiTO);
-            }
-            if (strategyStatusInfoTO.getRsi().isEmpty()) {
-                RSIIndicator rsiIndicator = new RSIIndicator(closePriceIndicator, 14);
-                RSITO rsiTO = new RSITO();
-                rsiTO.setPeriod(14);
-                rsiTO.setValue(rsiIndicator.getValue(bs.getEndIndex()).doubleValue());
-                strategyStatusInfoTO.getRsi().add(rsiTO);
-            }
-            VolumeIndicator volumeIndicator = new VolumeIndicator(bs, 20); // TODO add volume to IndicatorTypeEnum
-            strategyStatusInfoTO.setVolume(volumeIndicator.getValue(bs.getEndIndex()).doubleValue());
-
-            strategyStatusInfoTO.setOrders(tradeService.getOpenOrderByCurrencyAndStrategySeqId(symbolInfo.getSymbol(), strategyTO.getSeqId()));
-
-            return strategyStatusInfoTO;
-        }).collect(Collectors.toList());
+        return statusInfoService.getStrategyStatusInfoToList(strategyTO, barSeries, binanceApiRestClient);
     }
 }

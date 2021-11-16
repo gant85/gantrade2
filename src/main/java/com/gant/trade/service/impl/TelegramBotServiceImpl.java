@@ -12,6 +12,7 @@ import com.gant.trade.rest.model.StrategyStatus;
 import com.gant.trade.rest.model.StrategyStatusInfoTO;
 import com.gant.trade.service.TelegramBotService;
 import com.gant.trade.service.TradeStrategyService;
+import com.gant.trade.utility.DecimalFormatUtil;
 import com.gant.trade.utility.SymbolInfoUtil;
 import com.gant.trade.utility.constant.TelegramBotConstant;
 import lombok.extern.slf4j.Slf4j;
@@ -108,9 +109,17 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
                 List<StrategyStatusInfoTO> strategyStatusInfoTOList = strategyService.getStrategyStatusInfo(Long.parseLong(message[1]));
                 String text = strategyStatusInfoTOList.stream().map(strategyStatusInfoTO -> {
                     String price = "Price: " + strategyStatusInfoTO.getPrice() + "\n";
-                    String rsi = strategyStatusInfoTO.getRsi().stream().map(rsiTO -> "RSI | Period: " + rsiTO.getPeriod() + " Value: " + rsiTO.getValue()).collect(Collectors.joining("\n"));
-                    String volume = "\nVolume: " + strategyStatusInfoTO.getVolume() + "\n";
-                    String orders = strategyStatusInfoTO.getOrders().stream().map(orderTO -> orderTO.getInsertionTime().format(DateTimeFormatter.ofPattern("dd/MM HH:mm:ss")) + " " + orderTO.getSide() + " " + orderTO.getSymbolInfo().getBaseAsset() + " " + orderTO.getPrice()).collect(Collectors.joining("\n")) + "\n";
+                    String rsi = strategyStatusInfoTO.getRsi().stream().map(rsiTO -> "RSI | Period: " + rsiTO.getPeriod() + " Value: " + DecimalFormatUtil.format(rsiTO.getValue())).collect(Collectors.joining("\n"));
+                    String volume = "\nVolume: " + DecimalFormatUtil.format(strategyStatusInfoTO.getVolume()) + "\n";
+                    String orders = strategyStatusInfoTO.getOrders().stream()
+                            .map(orderTO -> {
+                                String datetime = "<b>" + orderTO.getInsertionTime().format(DateTimeFormatter.ofPattern("dd/MM HH:mm:ss")) + "</b>\n";
+                                String order = orderTO.getSide() + " " + orderTO.getSymbolInfo().getBaseAsset() + " " + orderTO.getPrice() + " ";
+                                String gain = "Gain: " + DecimalFormatUtil.format((orderTO.getAmount().doubleValue() * strategyStatusInfoTO.getPrice()) - orderTO.getSymbolInfo().getOrderSize().doubleValue());
+
+                                return datetime + order + gain;
+                            })
+                            .collect(Collectors.joining("\n")) + "\n";
                     return price + rsi + volume + orders;
                 }).collect(Collectors.joining("\n\n"));
                 updateMessage(StringUtils.defaultIfBlank(text, "Strategy not started."), chatId, messageId);
