@@ -97,15 +97,7 @@ public class StrategyService {
     }
 
     public void startBot(BotStrategy botStrategy) {
-        Strategy strategy = null;
-        if (botStrategy.getStrategySeqId() != null) {
-            strategy = strategyRepository.findBySeqId(botStrategy.getStrategySeqId());
-        } else if (botStrategy.getStrategyName() != null) {
-            strategy = strategyRepository.findByName(botStrategy.getStrategyName());
-        }
-        if (strategy == null) {
-            throw new StrategyNotFoundException();
-        }
+        Strategy strategy = getStrategy(botStrategy);
         // TODO rimuovere in futuro, troppe strategie non vanno bene nell'hashmap
         TradeStrategyService tradeStrategyService = tradeStrategyServiceMap.get(strategy.getSeqId());
         if (tradeStrategyService != null) {
@@ -133,15 +125,7 @@ public class StrategyService {
 
     public boolean stopBot(BotStrategy botStrategy) {
         boolean stopped = false;
-        Strategy strategy = null;
-        if (botStrategy.getStrategySeqId() != null) {
-            strategy = strategyRepository.findBySeqId(botStrategy.getStrategySeqId());
-        } else if (botStrategy.getStrategyName() != null) {
-            strategy = strategyRepository.findByName(botStrategy.getStrategyName());
-        }
-        if (strategy == null) {
-            throw new StrategyNotFoundException();
-        }
+        Strategy strategy = getStrategy(botStrategy);
         TradeStrategyService tradeStrategyService = tradeStrategyServiceMap.get(strategy.getSeqId());
         if (tradeStrategyService != null) {
             stopped = tradeStrategyService.stop();
@@ -152,6 +136,19 @@ public class StrategyService {
             strategyRepository.save(strategy);
         }
         return stopped;
+    }
+
+    private Strategy getStrategy(BotStrategy botStrategy) {
+        Strategy strategy = null;
+        if (botStrategy.getStrategySeqId() != null) {
+            strategy = strategyRepository.findBySeqId(botStrategy.getStrategySeqId());
+        } else if (botStrategy.getStrategyName() != null) {
+            strategy = strategyRepository.findByName(botStrategy.getStrategyName());
+        }
+        if (strategy == null) {
+            throw new StrategyNotFoundException();
+        }
+        return strategy;
     }
 
     public StrategyListTO strategyList(Integer userId, Integer pageSize, Integer pageIndex) {
