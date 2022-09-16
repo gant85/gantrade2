@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.Bar;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Date;
 
@@ -196,7 +197,7 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
             String message = String.format(
                     "%s%n%s %s%ngain: %s <b>%s</b>%nspent: %s %s",
                     order.getSide(),
-                    symbolInfo.getBaseAsset(), order.getPrice(),
+                    symbolInfo.getBaseAsset(), BigDecimal.valueOf(order.getPrice()),
                     symbolInfo.getQuoteAsset(), DecimalFormatUtil.format(gain),
                     symbolInfo.getQuoteAsset(), DecimalFormatUtil.format(spent)
             );

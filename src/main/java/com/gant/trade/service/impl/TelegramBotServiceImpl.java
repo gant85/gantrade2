@@ -31,6 +31,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,7 +109,7 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
             case TelegramBotConstant.STRATEGY_STATUS_INFO: {
                 List<StrategyStatusInfoTO> strategyStatusInfoTOList = strategyService.getStrategyStatusInfo(Long.parseLong(message[1]));
                 String text = strategyStatusInfoTOList.stream().map(strategyStatusInfoTO -> {
-                    String price = "Price: " + strategyStatusInfoTO.getPrice() + "\n";
+                    String price = "Price: " + BigDecimal.valueOf(strategyStatusInfoTO.getPrice()) + "\n";
                     String rsi = strategyStatusInfoTO.getRsi().stream().map(rsiTO -> "RSI | Period: " + rsiTO.getPeriod() + " Value: " + DecimalFormatUtil.format(rsiTO.getValue())).collect(Collectors.joining("\n"));
                     String volume = "\nVolume: " + DecimalFormatUtil.format(strategyStatusInfoTO.getVolume()) + "\n";
                     String orders = strategyStatusInfoTO.getOrders().stream()
