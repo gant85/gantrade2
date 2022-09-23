@@ -11,12 +11,12 @@ import com.gant.trade.domain.Order;
 import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
-import com.gant.trade.mongo.repository.UserRepository;
 import com.gant.trade.mongo.repository.OrderRepository;
+import com.gant.trade.mongo.repository.UserRepository;
+import com.gant.trade.mongo.service.TradeService;
+import com.gant.trade.rest.model.TradeState;
 import com.gant.trade.service.OrderService;
 import com.gant.trade.service.TelegramBotService;
-import com.gant.trade.rest.model.TradeState;
-import com.gant.trade.mongo.service.TradeService;
 import com.gant.trade.utility.BarSeriesUtil;
 import com.gant.trade.utility.DecimalFormatUtil;
 import com.gant.trade.utility.SymbolInfoUtil;
@@ -51,21 +51,21 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
     double feeBinance = 1.001;
 
     @Override
-    public void openTrade(BinanceApiRestClient binanceApiRestClient, Trade trade, Bar bar,double orderSize, boolean debug) {
+    public void openTrade(BinanceApiRestClient binanceApiRestClient, Trade trade, Bar bar, double orderSize, boolean debug) {
         String chatId = null;
         SymbolInfo symbolInfo = null;
         try {
             trade.setTradeState(TradeState.OPENING);
 
             User user = userRepository.findBySeqId(trade.getUserId());
-            if(user != null) {
+            if (user != null) {
                 chatId = user.getTelegramId();
             }
 
-            symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(trade.getExchange(),trade.getUserId(),trade.getSymbol(),orderSize);
+            symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
 
             double price = Double.parseDouble(binanceApiRestClient.getPrice(symbolInfo.getSymbol()).getPrice());
-            double amount = symbolInfoUtil.getAmount(price,symbolInfo);
+            double amount = symbolInfoUtil.getAmount(price, symbolInfo);
 
             NewOrder newOrder = new NewOrder(symbolInfo.getSymbol(), com.gant.binance.api.client.domain.OrderSide.BUY, OrderType.MARKET, null, String.valueOf(amount));
 
@@ -109,14 +109,14 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
             String message = String.format(
                     "%s%n%s %s",
                     order.getSide(),
-                    symbolInfo.getBaseAsset(), order.getPrice()
+                    symbolInfo.getBaseAsset(), BigDecimal.valueOf(order.getPrice())
             );
             log.info(message.replace("\n", " - ").replace("<b>", ""));
-            telegramBotService.sendMessageToGanTradeBot(chatId,message);
+            telegramBotService.sendMessageToGanTradeBot(chatId, message);
         } catch (Exception e) {
             String message = String.format("Got an exception while opening trade. Error: %s", e.getMessage());
             log.error(message, e);
-            telegramBotService.sendMessageToGanTradeBot(chatId,message);
+            telegramBotService.sendMessageToGanTradeBot(chatId, message);
             trade.setTradeState(TradeState.ERROR);
         } finally {
             Trade tradeSaved = tradeService.save(trade);
@@ -125,16 +125,16 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
     }
 
     @Override
-    public void closeTrade(final BinanceApiRestClient binanceApiRestClient, Trade trade, Bar bar,double orderSize, boolean debug) {
-        String chatId=null;
+    public void closeTrade(final BinanceApiRestClient binanceApiRestClient, Trade trade, Bar bar, double orderSize, boolean debug) {
+        String chatId = null;
         try {
             User user = userRepository.findBySeqId(trade.getUserId());
-            if(user != null) {
+            if (user != null) {
                 chatId = user.getTelegramId();
             }
 
             Order buyOrder = trade.getOrders().get(0);
-            SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(trade.getExchange(),trade.getUserId(),trade.getSymbol(),orderSize);
+            SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
             double price = Double.parseDouble(binanceApiRestClient.getPrice(symbolInfo.getSymbol()).getPrice());
             long start = System.currentTimeMillis();
             long serverTime = binanceApiRestClient.getServerTime();
@@ -149,7 +149,7 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
 
             //if the expected quantity(buyOrderAmount) is less than the available quantity(baseAssetAmount), sell the available quantity
             double amountOrder = (buyOrderAmount < baseAssetAmount) ? buyOrderAmount : baseAssetAmount / feeBinance;
-            double amount = symbolInfoUtil.getAmountPrecision(amountOrder,symbolInfo);
+            double amount = symbolInfoUtil.getAmountPrecision(amountOrder, symbolInfo);
 
             NewOrder newOrder = new NewOrder(symbolInfo.getSymbol(), com.gant.binance.api.client.domain.OrderSide.SELL, OrderType.MARKET, null, String.valueOf(amount));
 
@@ -191,8 +191,8 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
             double gain = (order.getPrice() - buyOrder.getPrice()) * amount;
             trade.setGain(gain);
 
-            double percentage = (trade.getExpectedPriceClose() - trade.getExpectedPriceOpen())/trade.getExpectedPriceOpen()*100;
-            trade.setPercentage(DecimalFormatUtil.round(percentage,2));
+            double percentage = (trade.getExpectedPriceClose() - trade.getExpectedPriceOpen()) / trade.getExpectedPriceOpen() * 100;
+            trade.setPercentage(DecimalFormatUtil.round(percentage, 2));
 
             String message = String.format(
                     "%s%n%s %s%ngain: %s <b>%s</b>%nspent: %s %s",
@@ -202,11 +202,11 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
                     symbolInfo.getQuoteAsset(), DecimalFormatUtil.format(spent)
             );
             log.info(message.replace("\n", " - ").replace("<b>", "").replace("</b>", ""));
-            telegramBotService.sendMessageToGanTradeBot(chatId,message);
+            telegramBotService.sendMessageToGanTradeBot(chatId, message);
         } catch (Exception e) {
             String message = String.format("Got an exception while closing trade %s. Error: %s", trade.getId(), e.getMessage());
             log.error(message, e);
-            telegramBotService.sendMessageToGanTradeBot(chatId,message);
+            telegramBotService.sendMessageToGanTradeBot(chatId, message);
             trade.setTradeState(TradeState.ERROR);
         } finally {
             tradeService.save(trade);
