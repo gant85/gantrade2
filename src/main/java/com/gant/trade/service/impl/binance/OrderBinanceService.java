@@ -51,15 +51,15 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
     double feeBinance = 1.001;
 
     @Override
-    public void openTrade(BinanceApiRestClient binanceApiRestClient, Trade trade, Bar bar, double orderSize, boolean debug) {
+    public void openTrade(BinanceApiRestClient binanceApiRestClient, Trade trade, Bar bar, double orderSize, User user, boolean debug) {
         String chatId = null;
         SymbolInfo symbolInfo = null;
         try {
             trade.setTradeState(TradeState.OPENING);
 
-            User user = userRepository.findBySeqId(trade.getUserId());
-            if (user != null) {
-                chatId = user.getTelegramId();
+            User u = user == null ? userRepository.findBySeqId(trade.getUserId()) : user;
+            if (u != null) {
+                chatId = u.getTelegramId();
             }
 
             symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
@@ -125,12 +125,12 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient> {
     }
 
     @Override
-    public void closeTrade(final BinanceApiRestClient binanceApiRestClient, Trade trade, Bar bar, double orderSize, boolean debug) {
+    public void closeTrade(final BinanceApiRestClient binanceApiRestClient, Trade trade, Bar bar, double orderSize, User user, boolean debug) {
         String chatId = null;
         try {
-            User user = userRepository.findBySeqId(trade.getUserId());
-            if (user != null) {
-                chatId = user.getTelegramId();
+            User u = user == null ? userRepository.findBySeqId(trade.getUserId()) : user;
+            if (u != null) {
+                chatId = u.getTelegramId();
             }
 
             Order buyOrder = trade.getOrders().get(0);

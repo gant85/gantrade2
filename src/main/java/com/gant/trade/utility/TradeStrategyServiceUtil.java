@@ -5,16 +5,16 @@ import com.gant.trade.domain.Order;
 import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
-import com.gant.trade.rest.model.Exchange;
-import com.gant.trade.rest.model.ExchangeConfiguration;
+import com.gant.trade.rest.model.*;
 import com.gant.trade.strategy.TradeStrategy;
-import com.gant.trade.rest.model.StrategyTO;
-import com.gant.trade.rest.model.TradeState;
 import lombok.extern.slf4j.Slf4j;
+import org.ta4j.core.Bar;
 import org.ta4j.core.*;
 import org.ta4j.core.num.DecimalNum;
 import org.ta4j.core.num.Num;
 
+import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +24,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TradeStrategyServiceUtil {
 
-    private TradeStrategyServiceUtil(){}
+    private TradeStrategyServiceUtil() {
+    }
 
     public static Map<String, Strategy> getStrategies(List<SymbolInfo> currencies, Map<String, BarSeries> barSeries, StrategyTO strategyTO) {
         return currencies.stream().collect(Collectors.toMap(SymbolInfo::getSymbol, symbolInfo1 -> new TradeStrategy(barSeries.get(symbolInfo1.getSymbol()), strategyTO).getStrategy()));
@@ -80,8 +81,26 @@ public class TradeStrategyServiceUtil {
         return openTrades.get(0);
     }
 
-    public static ExchangeConfiguration getExchangeConfigurationByExchange(User user,Exchange exchange){
+    public static ExchangeConfiguration getExchangeConfigurationByExchange(User user, Exchange exchange) {
         return user.getExchangeConfiguration().stream()
                 .filter(exchangeConfiguration -> exchangeConfiguration.getExchangeTO().getExchange() == exchange).findFirst().orElse(null);
+    }
+
+    public static String getStrategyStatusInfoMessage(List<StrategyStatusInfoTO> strategyStatusInfoTOList) {
+        return strategyStatusInfoTOList.stream().map(strategyStatusInfoTO -> {
+            String price = "Price: " + BigDecimal.valueOf(strategyStatusInfoTO.getPrice()) + "\n";
+            String rsi = strategyStatusInfoTO.getRsi().stream().map(rsiTO -> "RSI | Period: " + rsiTO.getPeriod() + " Value: " + DecimalFormatUtil.format(rsiTO.getValue())).collect(Collectors.joining("\n"));
+            String volume = "\nVolume: " + DecimalFormatUtil.format(strategyStatusInfoTO.getVolume()) + "\n";
+            String orders = strategyStatusInfoTO.getOrders().stream()
+                    .map(orderTO -> {
+                        String datetime = "<b>" + orderTO.getInsertionTime().format(DateTimeFormatter.ofPattern("dd/MM HH:mm:ss")) + "</b>\n";
+                        String order = orderTO.getSide() + " " + orderTO.getSymbolInfo().getBaseAsset() + " " + orderTO.getPrice() + " ";
+                        String gain = "Gain: " + DecimalFormatUtil.format((orderTO.getAmount().doubleValue() * strategyStatusInfoTO.getPrice()) - orderTO.getSymbolInfo().getOrderSize().doubleValue());
+
+                        return datetime + order + gain;
+                    })
+                    .collect(Collectors.joining("\n")) + "\n";
+            return price + rsi + volume + orders;
+        }).collect(Collectors.joining("\n\n"));
     }
 }

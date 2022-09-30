@@ -66,6 +66,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
     private Map<String, List<Trade>> trades;
     private List<Closeable> candlestickSubscriptions;
     private Map<String, TradingRecord> tradingRecordMap;
+    private User user;
 
     private final boolean debug;
     private int maxRetry = 0;
@@ -123,7 +124,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
             this.candleMerger = new HashMap<>();
             this.candlestickEventLastTimes = new HashMap<>();
             this.currencies = strategyTO.getSymbolInfo().stream().map(currency ->
-                            symbolInfoUtil.getSymbolInfoByExchange(strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize().doubleValue()))
+                    symbolInfoUtil.getSymbolInfoByExchange(strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize().doubleValue()))
                     .collect(Collectors.toList());
 
             this.barSeries = new HashMap<>();
@@ -134,6 +135,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
             this.tradingRecordMap = TradeStrategyServiceUtil.getTradingRecordMap(currencies, trades, barSeries, strategyTO.getName());
 
             this.strategies = TradeStrategyServiceUtil.getStrategies(currencies, barSeries, strategyTO);
+            this.user = user;
 
             registerCandles();
             maxRetry = 0;
@@ -161,14 +163,14 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
     public void registerCandles() {
         log.info("{} Register candles", strategyTO.getName());
         candlestickSubscriptions = currencies.stream().map(currency -> {
-                    candleMerger.put(currency.getSymbol(), new BarMerger(currency, timeframe, strategyTO.getCheckRulesEveryTime(), strategyTO.getCheckRulesEveryTimeValue(), this::barDoneCallback));
+            candleMerger.put(currency.getSymbol(), new BarMerger(currency, timeframe, strategyTO.getCheckRulesEveryTime(), strategyTO.getCheckRulesEveryTimeValue(), this::barDoneCallback));
 
-                    return binanceApiWebSocketClient.onCandlestickEvent(
-                            currency.getSymbol().toLowerCase(),
-                            CandlestickInterval.valueOf(timeframe.name()),
-                            candlestickEvent -> handleCandlestickCallback(currency, candlestickEvent)
-                    );
-                })
+            return binanceApiWebSocketClient.onCandlestickEvent(
+                    currency.getSymbol().toLowerCase(),
+                    CandlestickInterval.valueOf(timeframe.name()),
+                    candlestickEvent -> handleCandlestickCallback(currency, candlestickEvent)
+            );
+        })
                 .collect(Collectors.toList());
     }
 
@@ -195,10 +197,16 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
             openOrder(symbolInfo, bar);
             boolean enter = tradingRecord.enter(endIndex, bar.getClosePrice(), DecimalNum.valueOf(symbolInfoUtil.getPrecision(symbolInfo)));
             log.info("Order enter = {}", enter);
-        } else if (openTrade != null && strategies.get(symbolInfo.getSymbol()).shouldExit(endIndex, tradingRecord)) {
-            closeOrder(symbolInfo, bar, openTrade);
-            boolean exit = tradingRecord.exit(endIndex, bar.getClosePrice(), DecimalNum.valueOf(symbolInfoUtil.getPrecision(symbolInfo)));
-            log.info("Order exit = {}", exit);
+        } else if (openTrade != null) {
+            if (strategies.get(symbolInfo.getSymbol()).shouldExit(endIndex, tradingRecord)) {
+                closeOrder(symbolInfo, bar, openTrade);
+                boolean exit = tradingRecord.exit(endIndex, bar.getClosePrice(), DecimalNum.valueOf(symbolInfoUtil.getPrecision(symbolInfo)));
+                log.info("Order exit = {}", exit);
+            } else if (user != null) {
+                List<StrategyStatusInfoTO> strategyStatusInfoTOList = getStrategyStatusInfoToList();
+                String message = TradeStrategyServiceUtil.getStrategyStatusInfoMessage(strategyStatusInfoTOList);
+                telegramBotService.sendMessageToGanTradeBot(user.getTelegramId(), message);
+            }
         }
     }
 
@@ -206,12 +214,12 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
         log.info("{} openOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
         Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), symbolInfo.getOrderSize());
         tradeService.addTradeToOpenTradeList(trades, trade, symbolInfo.getOrderSize());
-        orderBinanceService.openTrade(binanceApiRestClient, trade, bar, symbolInfo.getOrderSize(), debug);
+        orderBinanceService.openTrade(binanceApiRestClient, trade, bar, symbolInfo.getOrderSize(), user, debug);
     }
 
     public void closeOrder(SymbolInfo symbolInfo, final Bar bar, final Trade openTrade) {
         log.info("{} closeOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
-        orderBinanceService.closeTrade(binanceApiRestClient, openTrade, bar, symbolInfo.getOrderSize(), debug);
+        orderBinanceService.closeTrade(binanceApiRestClient, openTrade, bar, symbolInfo.getOrderSize(), user, debug);
         tradeService.removeTradeToOpenTradeList(trades, openTrade);
     }
 
