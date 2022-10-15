@@ -16,5 +16,7 @@ public interface TradeRepository extends MongoRepository<Trade, Long> {
 
     List<Trade> findByTradeStateAndStrategyIdIn(TradeState open, List<Long> ids);
 
+    List<Trade> findByStrategyId(Long strategyId);
+
     Page<Trade> findByUserId(long userId, Pageable pageable);
 }

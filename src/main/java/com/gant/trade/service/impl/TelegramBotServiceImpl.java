@@ -109,6 +109,12 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
                 updateMessage(StringUtils.defaultIfBlank(text, "Strategy not started."), chatId, messageId);
                 break;
             }
+            case TelegramBotConstant.STRATEGY_TOTAL_GAIN: {
+                double totalGain = tradeService.totalGain(Long.parseLong(message[1]));
+                String text = String.format("Total Gain: %s", totalGain);
+                updateMessage(text, chatId, messageId);
+                break;
+            }
             default:
                 break;
         }
@@ -258,6 +264,11 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
             strategyStartStopButton.setCallbackData(String.format("%s %s %s", TelegramBotConstant.CALLBACK_STATUS_AUTOMATION, StrategyStatus.ACTIVE.equals(status) ? TelegramBotConstant.AUTOMATION_STOP : TelegramBotConstant.AUTOMATION_START, s.getSeqId()));
             strategyStartStopButton.setText(StrategyStatus.ACTIVE.equals(status) ? "ACTIVATED" : "DISABLED");
             rowInline.add(strategyStartStopButton);
+
+            InlineKeyboardButton totalGainButton = new InlineKeyboardButton();
+            totalGainButton.setCallbackData(String.format("%s %s", TelegramBotConstant.STRATEGY_TOTAL_GAIN, s.getSeqId()));
+            totalGainButton.setText("GAIN");
+            rowInline.add(totalGainButton);
 
             rowsInline.add(rowInline);
         });

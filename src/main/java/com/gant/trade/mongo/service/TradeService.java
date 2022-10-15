@@ -1,9 +1,6 @@
 package com.gant.trade.mongo.service;
 
-import com.gant.trade.domain.Strategy;
-import com.gant.trade.domain.SymbolInfo;
-import com.gant.trade.domain.Trade;
-import com.gant.trade.domain.User;
+import com.gant.trade.domain.*;
 import com.gant.trade.domain.mapper.OrderMapper;
 import com.gant.trade.domain.mapper.TradeMapper;
 import com.gant.trade.mongo.repository.StrategyRepository;
@@ -53,6 +50,15 @@ public class TradeService {
         return trades;
     }
 
+    public double totalGain(Long strategyId) {
+        List<Trade> list = tradeRepository.findByStrategyId(strategyId);
+
+        return list.stream().filter(t -> t.getTradeState().equals(TradeState.CLOSED)).map(trade -> {
+            Order order = trade.getOrders().stream().filter(o -> "SELL".equals(o.getSide())).findFirst().orElse(null);
+            return order != null ? order.getBalance() - order.getSymbolInfo().getOrderSize() : 0D;
+        })
+                .mapToDouble(Double::doubleValue).sum();
+    }
 
     public void removeTradeToOpenTradeList(Map<String, List<Trade>> trades, Trade trade) {
         SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
