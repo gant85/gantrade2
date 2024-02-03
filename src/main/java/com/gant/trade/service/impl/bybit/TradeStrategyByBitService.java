@@ -1,7 +1,6 @@
 package com.gant.trade.service.impl.bybit;
 
 import com.gant.trade.config.BotConfig;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.model.CandlestickEvent;
@@ -58,7 +57,7 @@ public class TradeStrategyByBitService implements TradeStrategyService {
     private Map<String, BarSeries> barSeries;
     private Map<String, LocalDateTime> candlestickEventLastTimes;
     private Map<String, Strategy> strategies;
-    private List<SymbolInfo> currencies;
+    private List<SymbolInfoTO> currencies;
     private Map<String, List<Trade>> trades;
     private Disposable klinesSubscriber;
     private Map<String, TradingRecord> tradingRecordMap;
@@ -107,7 +106,7 @@ public class TradeStrategyByBitService implements TradeStrategyService {
             this.candleMerger = new HashMap<>();
             this.candlestickEventLastTimes = new HashMap<>();
             this.currencies = strategyTO.getSymbolInfo().stream().map(currency ->
-                            symbolInfoUtil.getSymbolInfoByExchange(byBitProxy, strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize().doubleValue()))
+                            symbolInfoUtil.getSymbolInfoByExchange(byBitProxy, strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize()))
                     .collect(Collectors.toList());
 
             this.barSeries = new HashMap<>();
@@ -149,7 +148,7 @@ public class TradeStrategyByBitService implements TradeStrategyService {
         log.info("{} Register candles", strategyTO.getName());
         klinesSubscriber = byBitWebSocketClient.subscribeKlines(currencies, timeframe)
                 .subscribe(candlestickEvent -> {
-                    for (SymbolInfo symbolInfo : currencies) {
+                    for (SymbolInfoTO symbolInfo : currencies) {
                         candleMerger.put(symbolInfo.getSymbol(), new BarMerger(symbolInfo, timeframe, strategyTO.getCheckRulesEveryTime(), strategyTO.getCheckRulesEveryTimeValue(), this::barDoneCallback));
                         if (symbolInfo.getSymbol().equals(candlestickEvent.getSymbol())) {
                             handleCandlestickCallback(symbolInfo, candlestickEvent);
@@ -159,7 +158,7 @@ public class TradeStrategyByBitService implements TradeStrategyService {
     }
 
     @Override
-    public void barDoneCallback(SymbolInfo symbolInfo, Bar bar) {
+    public void barDoneCallback(SymbolInfoTO symbolInfo, Bar bar) {
         try {
             BarSeriesUtil.addBar(barSeries, symbolInfo, bar, strategyTO.getName());
             shouldEnterExit(symbolInfo, bar);
@@ -173,7 +172,7 @@ public class TradeStrategyByBitService implements TradeStrategyService {
     }
 
     @Override
-    public void shouldEnterExit(SymbolInfo symbolInfo, Bar bar) {
+    public void shouldEnterExit(SymbolInfoTO symbolInfo, Bar bar) {
         BarSeries bs = barSeries.get(symbolInfo.getSymbol());
         final int endIndex = bs.getEndIndex();
         final Trade openTrade = TradeStrategyServiceUtil.getOpenTrade(symbolInfo, trades, strategyTO.getName());
@@ -197,28 +196,28 @@ public class TradeStrategyByBitService implements TradeStrategyService {
     }
 
     @Override
-    public void openOrder(SymbolInfo symbolInfo, Bar bar) {
+    public void openOrder(SymbolInfoTO symbolInfo, Bar bar) {
         log.info("{} openOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
-        Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), symbolInfo.getOrderSize());
-        tradeService.addTradeToOpenTradeList(trades, trade, symbolInfo.getOrderSize());
+        Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), Double.parseDouble(symbolInfo.getOrderSize()));
+        tradeService.addTradeToOpenTradeList(trades, trade, symbolInfo);
         orderByBitService.openTrade(byBitProxy, symbolInfoUtil, trade, bar, symbolInfo.getOrderSize(), user, debug);
     }
 
     @Override
-    public void closeOrder(SymbolInfo symbolInfo, Bar bar, Trade openTrade) {
+    public void closeOrder(SymbolInfoTO symbolInfo, Bar bar, Trade openTrade) {
         log.info("{} closeOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
         orderByBitService.closeTrade(byBitProxy, symbolInfoUtil, openTrade, bar, symbolInfo.getOrderSize(), user, debug);
         tradeService.removeTradeToOpenTradeList(trades, openTrade);
     }
 
     @Override
-    public void closeOrderManually(SymbolInfo symbolInfo, Trade openTrade) {
+    public void closeOrderManually(SymbolInfoTO symbolInfo, Trade openTrade) {
         Bar bar = barSeries.get(symbolInfo.getSymbol()).getLastBar();
         closeOrder(symbolInfo, bar, openTrade);
     }
 
     @Override
-    public void handleCandlestickCallback(SymbolInfo symbolInfo, CandlestickEvent candlestickEvent) {
+    public void handleCandlestickCallback(SymbolInfoTO symbolInfo, CandlestickEvent candlestickEvent) {
         MDC.put("StrategyName", strategyTO.getName());
         log.trace("{} currencyPair={} price={}", strategyTO.getName(), symbolInfo.getSymbol(), candlestickEvent.getClose());
         candlestickEventLastTimes.put(symbolInfo.getSymbol(), LocalDateTime.now());

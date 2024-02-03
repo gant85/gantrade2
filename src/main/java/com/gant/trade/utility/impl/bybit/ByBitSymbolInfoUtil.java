@@ -1,9 +1,9 @@
 package com.gant.trade.utility.impl.bybit;
 
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.proxy.bybit.v5.ByBitProxy;
 import com.gant.trade.proxy.bytbit.v5.model.InstrumentsInfoResponse;
 import com.gant.trade.proxy.bytbit.v5.model.InstrumentsInfoResponseRow;
+import com.gant.trade.rest.model.SymbolInfoTO;
 import com.gant.trade.utility.impl.SymbolInfoUtilImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
@@ -16,13 +16,13 @@ public class ByBitSymbolInfoUtil extends SymbolInfoUtilImpl<ByBitProxy> {
     }
 
     @Override
-    public SymbolInfo convert(ByBitProxy exchangeClient, String symbol, double orderSize) {
+    public SymbolInfoTO convert(ByBitProxy exchangeClient, String symbol, String orderSize) {
         InstrumentsInfoResponse instrumentsInfoResponse = exchangeClient.getByBitMarketProxy().instrumentsInfo("linear", symbol, null, null, null, null);
         if (instrumentsInfoResponse == null || instrumentsInfoResponse.getResult() == null || instrumentsInfoResponse.getResult().getList() == null) {
             return null;
         }
         InstrumentsInfoResponseRow row = instrumentsInfoResponse.getResult().getList().get(0);
-        SymbolInfo s = new SymbolInfo();
+        SymbolInfoTO s = new SymbolInfoTO();
         s.setSymbol(row.getSymbol());
         s.setBaseAsset(row.getBaseCoin());
         s.setQuoteAsset(row.getQuoteCoin());

@@ -3,6 +3,7 @@ package com.gant.trade.utility;
 import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.model.Candlestick;
 import com.gant.trade.model.Timeframe;
+import com.gant.trade.rest.model.SymbolInfoTO;
 import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
@@ -21,7 +22,7 @@ public class BarSeriesUtil {
     private BarSeriesUtil() {
     }
 
-    public static void addBar(Map<String, BarSeries> barSeries, SymbolInfo symbolInfo, Bar bar, String strategyName) {
+    public static void addBar(Map<String, BarSeries> barSeries, SymbolInfoTO symbolInfo, Bar bar, String strategyName) {
         BarSeries ts = barSeries.get(symbolInfo.getSymbol());
         if (ts.getLastBar().getBeginTime().isEqual(bar.getBeginTime())) {
             log.debug("{} {} {}: lastBarReplaced={}", strategyName, symbolInfo.getSymbol(), ts.getEndIndex(), bar);

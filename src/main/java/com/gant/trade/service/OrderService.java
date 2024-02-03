@@ -6,8 +6,8 @@ import org.ta4j.core.Bar;
 
 public interface OrderService<T, Z> {
 
-    void openTrade(T exchange, Z symbolInfoUtil, Trade trade, Bar bar, double orderSize, User user, boolean debug);
+    void openTrade(T exchange, Z symbolInfoUtil, Trade trade, Bar bar, String orderSize, User user, boolean debug);
 
-    void closeTrade(T exchange, Z symbolInfoUtil, Trade trade, Bar bar, double orderSize, User user, boolean debug);
+    void closeTrade(T exchange, Z symbolInfoUtil, Trade trade, Bar bar, String orderSize, User user, boolean debug);
 
 }

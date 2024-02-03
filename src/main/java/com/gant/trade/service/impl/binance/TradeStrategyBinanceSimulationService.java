@@ -3,7 +3,6 @@ package com.gant.trade.service.impl.binance;
 import com.gant.binance.api.client.BinanceApiClientFactory;
 import com.gant.binance.api.client.BinanceApiRestClient;
 import com.gant.binance.api.client.domain.market.CandlestickInterval;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.exception.StrategyNotFoundException;
@@ -92,8 +91,8 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
             if (timeframe == null) {
                 throw new StrategyNotFoundException();
             }
-            List<SymbolInfo> tradedCurrencies = strategyTO.getSymbolInfo().stream().map(symbol ->
-                            symbolInfoUtil.getSymbolInfoByExchange(binanceApiRestClient, Exchange.BINANCE, strategyTO.getUserId(), symbol.getSymbol(), symbol.getOrderSize().doubleValue()))
+            List<SymbolInfoTO> tradedCurrencies = strategyTO.getSymbolInfo().stream().map(symbol ->
+                            symbolInfoUtil.getSymbolInfoByExchange(binanceApiRestClient, Exchange.BINANCE, strategyTO.getUserId(), symbol.getSymbol(), symbol.getOrderSize()))
                     .collect(Collectors.toList());
             long startTime = strategySimulationRequest.getStartDate().atStartOfDay().minusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
             long endTime = strategySimulationRequest.getStartDate().atStartOfDay().minusSeconds(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -101,9 +100,9 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
                     .forEach((k, v) -> barSeries.put(k.getSymbolInfo(), v));
 
             strategies = TradeStrategyServiceUtil.getStrategies(tradedCurrencies, barSeries, strategyTO);
-            Map<SymbolInfo, BarMerger> candleMerger = tradedCurrencies.stream().collect(Collectors.toMap(currencyPair1 -> currencyPair1, currencyPair2 -> new BarMerger(currencyPair2, timeframe, strategyTO.getCheckRulesEveryTime(), strategyTO.getCheckRulesEveryTimeValue(), this::barDoneCallback)));
+            Map<SymbolInfoTO, BarMerger> candleMerger = tradedCurrencies.stream().collect(Collectors.toMap(currencyPair1 -> currencyPair1, currencyPair2 -> new BarMerger(currencyPair2, timeframe, strategyTO.getCheckRulesEveryTime(), strategyTO.getCheckRulesEveryTimeValue(), this::barDoneCallback)));
 
-            for (SymbolInfo symbolInfo : tradedCurrencies) {
+            for (SymbolInfoTO symbolInfo : tradedCurrencies) {
                 List<Candlestick> candlesticks = getCandlesticks(symbolInfo, strategySimulationRequest.getStartDate(), strategySimulationRequest.getEndDate());
                 for (Candlestick candlestick : candlesticks) {
                     LocalDateTime closeTime = Instant.ofEpochMilli(candlestick.getCloseTime()).atZone(ZoneId.systemDefault()).toLocalDateTime().plusSeconds(1);
@@ -124,7 +123,7 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
         return strategySimulationResponse;
     }
 
-    public List<Candlestick> getCandlesticks(SymbolInfo symbolInfo, LocalDate startDate, LocalDate endDate) {
+    public List<Candlestick> getCandlesticks(SymbolInfoTO symbolInfo, LocalDate startDate, LocalDate endDate) {
         List<com.gant.binance.api.client.domain.market.Candlestick> candlesticks = new ArrayList<>();
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.plusDays(1).atStartOfDay().minusSeconds(1);
@@ -140,7 +139,7 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
         return candlestickMapper.mapList(candlesticks);
     }
 
-    public void barDoneCallback(final SymbolInfo symbolInfo, final Bar bar) {
+    public void barDoneCallback(final SymbolInfoTO symbolInfo, final Bar bar) {
         try {
             BarSeriesUtil.addBar(barSeries, symbolInfo, bar, strategyTO.getName());
             shouldEnterExit(symbolInfo, bar);
@@ -149,7 +148,7 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
         }
     }
 
-    public void shouldEnterExit(final SymbolInfo symbolInfo, final Bar bar) {
+    public void shouldEnterExit(final SymbolInfoTO symbolInfo, final Bar bar) {
         BarSeries bs = barSeries.get(symbolInfo.getSymbol());
         final int endIndex = bs.getEndIndex();
         if (!tradingRecordMap.containsKey(symbolInfo.getSymbol())) {
@@ -159,7 +158,7 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
         log.debug("{} symbolInfo={} price={} openTrade={}", strategyTO.getName(), symbolInfo.getSymbol(), bar.getClosePrice(), openTrade != null);
 
         if (openTrade == null && strategies.get(symbolInfo.getSymbol()).shouldEnter(endIndex)) {
-            openTrade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), symbolInfo.getOrderSize());
+            openTrade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), Double.parseDouble(symbolInfo.getOrderSize()));
             openTrade.setExpectedPriceOpen(bar.getClosePrice().doubleValue());
             double amount = symbolInfoUtil.getAmount(bar.getClosePrice().doubleValue(), symbolInfo);
             openTrade.setAmount(amount);

@@ -1,7 +1,6 @@
 package com.gant.trade.mongo.service;
 
 import com.gant.trade.domain.Strategy;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.domain.mapper.OrderMapper;
@@ -46,8 +45,8 @@ public class TradeService {
 
         List<Long> ids = Collections.singletonList(stratedyId);
         tradeRepository.findByTradeStateAndStrategyIdIn(TradeState.OPEN, ids).forEach(trade -> {
-            SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
-            addTradeToOpenTradeList(trades, trade, symbolInfo.getOrderSize());
+            SymbolInfoTO symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
+            addTradeToOpenTradeList(trades, trade, symbolInfo);
         });
 
         return trades;
@@ -61,7 +60,7 @@ public class TradeService {
     }
 
     public void removeTradeToOpenTradeList(Map<String, List<Trade>> trades, Trade trade) {
-        SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
+        SymbolInfoTO symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
 
         List<Trade> list = trades.get(symbolInfo.getSymbol());
         if (list != null) {
@@ -107,9 +106,7 @@ public class TradeService {
         }
     }
 
-    public void addTradeToOpenTradeList(Map<String, List<Trade>> trades, Trade trade, double orderSize) {
-        SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
-
+    public void addTradeToOpenTradeList(Map<String, List<Trade>> trades, Trade trade, SymbolInfoTO symbolInfo) {
         if (!trades.containsKey(symbolInfo.getSymbol())) {
             trades.put(symbolInfo.getSymbol(), new ArrayList<>());
         }

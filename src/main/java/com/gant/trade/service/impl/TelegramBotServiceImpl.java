@@ -1,7 +1,6 @@
 package com.gant.trade.service.impl;
 
 import com.gant.trade.domain.Strategy;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.mapper.StrategyMapper;
 import com.gant.trade.domain.mapper.TradeMapper;
@@ -10,6 +9,7 @@ import com.gant.trade.mongo.service.TradeService;
 import com.gant.trade.rest.model.BotStrategy;
 import com.gant.trade.rest.model.StrategyStatus;
 import com.gant.trade.rest.model.StrategyStatusInfoTO;
+import com.gant.trade.rest.model.SymbolInfoTO;
 import com.gant.trade.service.TelegramBotService;
 import com.gant.trade.service.TradeStrategyService;
 import com.gant.trade.utility.SymbolInfoUtil;
@@ -89,7 +89,7 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
             }
             case TelegramBotConstant.CALLBACK_CLOSE_ORDER: {
                 Trade trade = tradeService.getTradeBySeqId(Long.valueOf(message[1]));
-                SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
+                SymbolInfoTO symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
                 boolean isStrategyStarted = false;
                 for (TradeStrategyService tradeStrategyService : strategyService.getActiveTradeStrategyService()) {
                     if (trade.getStrategyId() == tradeStrategyService.getStrategyTO().getSeqId()) {

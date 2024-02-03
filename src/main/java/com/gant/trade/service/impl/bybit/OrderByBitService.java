@@ -3,7 +3,6 @@ package com.gant.trade.service.impl.bybit;
 import com.gant.binance.api.client.domain.OrderSide;
 import com.gant.binance.api.client.domain.OrderType;
 import com.gant.trade.domain.Order;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.mongo.repository.OrderRepository;
@@ -12,6 +11,7 @@ import com.gant.trade.mongo.service.TradeService;
 import com.gant.trade.proxy.bybit.v5.ByBitProxy;
 import com.gant.trade.proxy.bytbit.v5.model.TickersResponse;
 import com.gant.trade.proxy.bytbit.v5.model.TickersResponseRow;
+import com.gant.trade.rest.model.SymbolInfoTO;
 import com.gant.trade.rest.model.TradeState;
 import com.gant.trade.service.OrderService;
 import com.gant.trade.service.TelegramBotService;
@@ -40,9 +40,9 @@ public class OrderByBitService implements OrderService<ByBitProxy, ByBitSymbolIn
     private UserRepository userRepository;
 
     @Override
-    public void openTrade(ByBitProxy exchange, ByBitSymbolInfoUtil symbolInfoUtil, Trade trade, Bar bar, double orderSize, User user, boolean debug) {
+    public void openTrade(ByBitProxy exchange, ByBitSymbolInfoUtil symbolInfoUtil, Trade trade, Bar bar, String orderSize, User user, boolean debug) {
         String chatId = null;
-        SymbolInfo symbolInfo = null;
+        SymbolInfoTO symbolInfo = null;
         try {
             trade.setTradeState(TradeState.OPENING);
 
@@ -110,7 +110,7 @@ public class OrderByBitService implements OrderService<ByBitProxy, ByBitSymbolIn
     }
 
     @Override
-    public void closeTrade(ByBitProxy exchange, ByBitSymbolInfoUtil symbolInfoUtil, Trade trade, Bar bar, double orderSize, User user, boolean debug) {
+    public void closeTrade(ByBitProxy exchange, ByBitSymbolInfoUtil symbolInfoUtil, Trade trade, Bar bar, String orderSize, User user, boolean debug) {
         String chatId = null;
         try {
             User u = user == null ? userRepository.findBySeqId(trade.getUserId()) : user;
@@ -119,7 +119,7 @@ public class OrderByBitService implements OrderService<ByBitProxy, ByBitSymbolIn
             }
 
             Order buyOrder = trade.getOrders().get(0);
-            SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(exchange, trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
+            SymbolInfoTO symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(exchange, trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
             double price = getPrice(exchange, symbolInfo);
             /*
             long start = System.currentTimeMillis();
@@ -201,7 +201,7 @@ public class OrderByBitService implements OrderService<ByBitProxy, ByBitSymbolIn
         }
     }
 
-    private Double getPrice(ByBitProxy exchange, SymbolInfo symbolInfo) {
+    private Double getPrice(ByBitProxy exchange, SymbolInfoTO symbolInfo) {
         TickersResponse tickersResponse = exchange.getByBitMarketProxy().tickers("linear", symbolInfo.getSymbol(), null, null);
         assert tickersResponse.getResult() != null;
         assert tickersResponse.getResult().getList() != null;

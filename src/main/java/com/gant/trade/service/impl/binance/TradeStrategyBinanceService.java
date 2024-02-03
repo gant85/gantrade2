@@ -5,7 +5,6 @@ import com.gant.binance.api.client.BinanceApiRestClient;
 import com.gant.binance.api.client.BinanceApiWebSocketClient;
 import com.gant.binance.api.client.domain.market.CandlestickInterval;
 import com.gant.trade.config.BotConfig;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.model.CandlestickEvent;
@@ -56,19 +55,17 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
 
     private BinanceApiRestClient binanceApiRestClient;
     private BinanceApiWebSocketClient binanceApiWebSocketClient;
-
     private StrategyTO strategyTO;
     private Timeframe timeframe;
     private Map<String, BarMerger> candleMerger;
     private Map<String, BarSeries> barSeries;
     private Map<String, LocalDateTime> candlestickEventLastTimes;
     private Map<String, Strategy> strategies;
-    private List<SymbolInfo> currencies;
+    private List<SymbolInfoTO> currencies;
     private Map<String, List<Trade>> trades;
     private List<Closeable> candlestickSubscriptions;
     private Map<String, TradingRecord> tradingRecordMap;
     private User user;
-
     private final boolean debug;
     private int maxRetry = 0;
 
@@ -128,7 +125,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
             this.candleMerger = new HashMap<>();
             this.candlestickEventLastTimes = new HashMap<>();
             this.currencies = strategyTO.getSymbolInfo().stream().map(currency ->
-                            symbolInfoUtil.getSymbolInfoByExchange(binanceApiRestClient, strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize().doubleValue()))
+                            symbolInfoUtil.getSymbolInfoByExchange(binanceApiRestClient, strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize()))
                     .collect(Collectors.toList());
 
             this.barSeries = new HashMap<>();
@@ -178,7 +175,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
                 .collect(Collectors.toList());
     }
 
-    public void barDoneCallback(SymbolInfo symbolInfo, final Bar bar) {
+    public void barDoneCallback(SymbolInfoTO symbolInfo, final Bar bar) {
         try {
             BarSeriesUtil.addBar(barSeries, symbolInfo, bar, strategyTO.getName());
             shouldEnterExit(symbolInfo, bar);
@@ -191,7 +188,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
         }
     }
 
-    public void shouldEnterExit(SymbolInfo symbolInfo, final Bar bar) {
+    public void shouldEnterExit(SymbolInfoTO symbolInfo, final Bar bar) {
         BarSeries bs = barSeries.get(symbolInfo.getSymbol());
         final int endIndex = bs.getEndIndex();
         final Trade openTrade = TradeStrategyServiceUtil.getOpenTrade(symbolInfo, trades, strategyTO.getName());
@@ -214,25 +211,25 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
         }
     }
 
-    public void openOrder(SymbolInfo symbolInfo, final Bar bar) {
+    public void openOrder(SymbolInfoTO symbolInfo, final Bar bar) {
         log.info("{} openOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
-        Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), symbolInfo.getOrderSize());
-        tradeService.addTradeToOpenTradeList(trades, trade, symbolInfo.getOrderSize());
+        Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), Double.parseDouble(symbolInfo.getOrderSize()));
+        tradeService.addTradeToOpenTradeList(trades, trade, symbolInfo);
         orderBinanceService.openTrade(binanceApiRestClient, symbolInfoUtil, trade, bar, symbolInfo.getOrderSize(), user, debug);
     }
 
-    public void closeOrder(SymbolInfo symbolInfo, final Bar bar, final Trade openTrade) {
+    public void closeOrder(SymbolInfoTO symbolInfo, final Bar bar, final Trade openTrade) {
         log.info("{} closeOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
         orderBinanceService.closeTrade(binanceApiRestClient, symbolInfoUtil, openTrade, bar, symbolInfo.getOrderSize(), user, debug);
         tradeService.removeTradeToOpenTradeList(trades, openTrade);
     }
 
-    public void closeOrderManually(SymbolInfo symbolInfo, final Trade openTrade) {
+    public void closeOrderManually(SymbolInfoTO symbolInfo, final Trade openTrade) {
         Bar bar = barSeries.get(symbolInfo.getSymbol()).getLastBar();
         closeOrder(symbolInfo, bar, openTrade);
     }
 
-    public void handleCandlestickCallback(SymbolInfo symbolInfo, final CandlestickEvent candlestickEvent) {
+    public void handleCandlestickCallback(SymbolInfoTO symbolInfo, final CandlestickEvent candlestickEvent) {
         MDC.put("StrategyName", strategyTO.getName());
         log.trace("{} currencyPair={} price={}", strategyTO.getName(), symbolInfo.getSymbol(), candlestickEvent.getClose());
         candlestickEventLastTimes.put(symbolInfo.getSymbol(), LocalDateTime.now());

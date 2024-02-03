@@ -1,8 +1,8 @@
 package com.gant.trade.utility;
 
 
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.model.Timeframe;
+import com.gant.trade.rest.model.SymbolInfoTO;
 import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.Bar;
 import org.ta4j.core.BaseBar;
@@ -21,22 +21,22 @@ import java.util.function.BiConsumer;
 public class BarMerger implements Closeable {
 
     private final Timeframe timeframe;
-    private final BiConsumer<SymbolInfo, Bar> candleConsumer;
+    private final BiConsumer<SymbolInfoTO, Bar> candleConsumer;
     private long timeframeBegin = -1;
     private double totalVolume = 0;
     private final List<BigDecimal> prices = new ArrayList<>();
-    private final SymbolInfo symbolInfo;
+    private final SymbolInfoTO symbolInfo;
     private long lastTimestamp = -1;
     private boolean checkRulesEveryTime = false;
     private int checkRulesEveryTimeValue = 0;
 
-    public BarMerger(SymbolInfo symbolInfo, Timeframe timeframe, BiConsumer<SymbolInfo, Bar> candleConsumer) {
+    public BarMerger(SymbolInfoTO symbolInfo, Timeframe timeframe, BiConsumer<SymbolInfoTO, Bar> candleConsumer) {
         this.symbolInfo = symbolInfo;
         this.timeframe = timeframe;
         this.candleConsumer = candleConsumer;
     }
 
-    public BarMerger(SymbolInfo symbolInfo, Timeframe timeframe, boolean checkRulesEveryTime, int checkRulesEveryTimeValue, BiConsumer<SymbolInfo, Bar> candleConsumer) {
+    public BarMerger(SymbolInfoTO symbolInfo, Timeframe timeframe, boolean checkRulesEveryTime, int checkRulesEveryTimeValue, BiConsumer<SymbolInfoTO, Bar> candleConsumer) {
         this.symbolInfo = symbolInfo;
         this.timeframe = timeframe;
         this.checkRulesEveryTime = checkRulesEveryTime;

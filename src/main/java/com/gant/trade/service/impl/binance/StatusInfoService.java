@@ -2,16 +2,16 @@ package com.gant.trade.service.impl.binance;
 
 import com.gant.binance.api.client.BinanceApiClientFactory;
 import com.gant.binance.api.client.BinanceApiRestClient;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.User;
 import com.gant.trade.model.Timeframe;
 import com.gant.trade.mongo.repository.UserRepository;
 import com.gant.trade.mongo.service.StrategyService;
 import com.gant.trade.mongo.service.TradeService;
 import com.gant.trade.rest.model.*;
-import com.gant.trade.utility.SymbolInfoUtil;
 import com.gant.trade.utility.TradeStrategyServiceUtil;
+import com.gant.trade.utility.impl.binance.BinanceSymbolInfoUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.indicators.RSIIndicator;
@@ -36,8 +36,11 @@ public class StatusInfoService {
     @Autowired
     private HistoricalCandlesBinanceService historicalCandlesBinanceService;
 
-    @Autowired
-    private SymbolInfoUtil symbolInfoUtil;
+    private final BinanceSymbolInfoUtil symbolInfoUtil;
+
+    public StatusInfoService(ApplicationContext applicationContext) {
+        symbolInfoUtil = new BinanceSymbolInfoUtil(applicationContext);
+    }
 
     public List<StrategyStatusInfoTO> getStrategyStatusInfoToList(Long seqId) {
         StrategyTO strategyTO = strategyService.getStrategyById(seqId);
@@ -49,8 +52,8 @@ public class StatusInfoService {
         final BinanceApiClientFactory binanceApiClientFactory = BinanceApiClientFactory.newInstance(userExchange.getApiKey(), userExchange.getSecretKey());
         BinanceApiRestClient binanceApiRestClient = binanceApiClientFactory.newRestClient();
         Timeframe timeframe = Timeframe.getTimeframe(strategyTO.getTimeframe().toString());
-        List<SymbolInfo> currencies = strategyTO.getSymbolInfo().stream()
-                .map(currency -> symbolInfoUtil.getSymbolInfoByExchange(strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize().doubleValue()))
+        List<SymbolInfoTO> currencies = strategyTO.getSymbolInfo().stream()
+                .map(currency -> symbolInfoUtil.getSymbolInfoByExchange(binanceApiRestClient, strategyTO.getExchange(), strategyTO.getUserId(), currency.getSymbol(), currency.getOrderSize()))
                 .collect(Collectors.toList());
         Map<String, BarSeries> barSeries = new HashMap<>();
         historicalCandlesBinanceService.requestHistoricalCandles(binanceApiRestClient, timeframe, currencies).forEach((k, v) -> barSeries.put(k.getSymbolInfo(), v));

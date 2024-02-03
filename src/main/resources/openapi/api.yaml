@@ -823,22 +823,19 @@ components:
         quoteAsset:
           type: string
         orderSize:
-          type: number
+          type: string
         baseAssetPrecision:
           type: integer
-          format: int64
+          format: int32
         quoteAssetPrecision:
           type: integer
-          format: int64
+          format: int32
         stepSize:
-          type: number
-          format: double
+          type: string
         minQty:
-          type: number
-          format: double
+          type: string
         tickSizePrice:
-          type: number
-          format: double
+          type: string
     RuleTO:
       type: object
       properties:

@@ -2,7 +2,6 @@ package com.gant.trade.utility;
 
 
 import com.gant.trade.domain.Order;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.rest.model.*;
@@ -27,13 +26,13 @@ public class TradeStrategyServiceUtil {
     private TradeStrategyServiceUtil() {
     }
 
-    public static Map<String, Strategy> getStrategies(List<SymbolInfo> currencies, Map<String, BarSeries> barSeries, StrategyTO strategyTO) {
-        return currencies.stream().collect(Collectors.toMap(SymbolInfo::getSymbol, symbolInfo1 -> new TradeStrategy(barSeries.get(symbolInfo1.getSymbol()), strategyTO).getStrategy()));
+    public static Map<String, Strategy> getStrategies(List<SymbolInfoTO> currencies, Map<String, BarSeries> barSeries, StrategyTO strategyTO) {
+        return currencies.stream().collect(Collectors.toMap(SymbolInfoTO::getSymbol, symbolInfo1 -> new TradeStrategy(barSeries.get(symbolInfo1.getSymbol()), strategyTO).getStrategy()));
     }
 
-    public static Map<String, TradingRecord> getTradingRecordMap(List<SymbolInfo> symbolInfos, Map<String, List<Trade>> tradeMap, Map<String, BarSeries> barSeries, String strategyName) {
+    public static Map<String, TradingRecord> getTradingRecordMap(List<SymbolInfoTO> symbolInfos, Map<String, List<Trade>> tradeMap, Map<String, BarSeries> barSeries, String strategyName) {
         Map<String, TradingRecord> tradingRecordMap = new HashMap<>();
-        for (SymbolInfo symbolInfo : symbolInfos) {
+        for (SymbolInfoTO symbolInfo : symbolInfos) {
             List<Trade> trades = tradeMap.get(symbolInfo.getSymbol());
             if (trades == null) {
                 trades = new ArrayList<>();
@@ -66,7 +65,7 @@ public class TradeStrategyServiceUtil {
         return tradingRecordMap;
     }
 
-    public static Trade getOpenTrade(SymbolInfo symbolInfo, Map<String, List<Trade>> tradeMap, String strategyName) {
+    public static Trade getOpenTrade(SymbolInfoTO symbolInfo, Map<String, List<Trade>> tradeMap, String strategyName) {
         final List<Trade> tradeList = tradeMap.get(symbolInfo.getSymbol());
         if (tradeList == null) {
             return null;
@@ -95,7 +94,7 @@ public class TradeStrategyServiceUtil {
                     .map(orderTO -> {
                         String datetime = "<b>" + orderTO.getInsertionTime().format(DateTimeFormatter.ofPattern("dd/MM HH:mm:ss")) + "</b>\n";
                         String order = orderTO.getSide() + " " + orderTO.getSymbolInfo().getBaseAsset() + " " + orderTO.getPrice() + " ";
-                        String gain = "Gain: " + DecimalFormatUtil.format((orderTO.getAmount().doubleValue() * strategyStatusInfoTO.getPrice()) - orderTO.getSymbolInfo().getOrderSize().doubleValue());
+                        String gain = "Gain: " + DecimalFormatUtil.format((orderTO.getAmount().doubleValue() * strategyStatusInfoTO.getPrice()) - Double.parseDouble(orderTO.getSymbolInfo().getOrderSize()));
 
                         return datetime + order + gain;
                     })

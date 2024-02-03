@@ -1,10 +1,10 @@
 package com.gant.trade.websocket.bybit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.model.CandlestickEvent;
 import com.gant.trade.model.Timeframe;
 import com.gant.trade.proxy.bybit.v5.BybitEncryption;
+import com.gant.trade.rest.model.SymbolInfoTO;
 import com.gant.trade.websocket.bybit.mapper.TopicKLineDataMapper;
 import com.gant.trade.websocket.bybit.mapper.TopicKLineDataMapperImpl;
 import com.gant.trade.websocket.bybit.model.TopicKLine;
@@ -100,7 +100,7 @@ public class ByBitWebSocketClient {
         }
     }
 
-    public Observable<CandlestickEvent> subscribeKlines(List<SymbolInfo> symbolInfo, Timeframe timeframe) throws IOException {
+    public Observable<CandlestickEvent> subscribeKlines(List<SymbolInfoTO> symbolInfo, Timeframe timeframe) throws IOException {
         observableKline = Observable.<CandlestickEvent>create(e -> {
             emitterKline = e;
         }).doOnDispose(() -> {

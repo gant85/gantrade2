@@ -1,6 +1,7 @@
 package com.gant.trade.domain;
 
 import com.gant.trade.rest.model.Exchange;
+import com.gant.trade.rest.model.SymbolInfoTO;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -22,7 +23,7 @@ public class Order {
     @Id
     private String id;
     private long seqId;
-    private SymbolInfo symbolInfo;
+    private SymbolInfoTO symbolInfo;
     private String type;
     private String side;
     private double price;

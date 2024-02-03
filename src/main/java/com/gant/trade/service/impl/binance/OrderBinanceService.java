@@ -8,18 +8,17 @@ import com.gant.binance.api.client.domain.account.Account;
 import com.gant.binance.api.client.domain.account.NewOrder;
 import com.gant.binance.api.client.domain.account.NewOrderResponse;
 import com.gant.trade.domain.Order;
-import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.mongo.repository.OrderRepository;
 import com.gant.trade.mongo.repository.UserRepository;
 import com.gant.trade.mongo.service.TradeService;
+import com.gant.trade.rest.model.SymbolInfoTO;
 import com.gant.trade.rest.model.TradeState;
 import com.gant.trade.service.OrderService;
 import com.gant.trade.service.TelegramBotService;
 import com.gant.trade.utility.BarSeriesUtil;
 import com.gant.trade.utility.DecimalFormatUtil;
-import com.gant.trade.utility.SymbolInfoUtil;
 import com.gant.trade.utility.impl.binance.BinanceSymbolInfoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +48,9 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient, B
     double feeBinance = 1.001;
 
     @Override
-    public void openTrade(BinanceApiRestClient binanceApiRestClient, BinanceSymbolInfoUtil symbolInfoUtil, Trade trade, Bar bar, double orderSize, User user, boolean debug) {
+    public void openTrade(BinanceApiRestClient binanceApiRestClient, BinanceSymbolInfoUtil symbolInfoUtil, Trade trade, Bar bar, String orderSize, User user, boolean debug) {
         String chatId = null;
-        SymbolInfo symbolInfo = null;
+        SymbolInfoTO symbolInfo = null;
         try {
             trade.setTradeState(TradeState.OPENING);
 
@@ -123,7 +122,7 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient, B
     }
 
     @Override
-    public void closeTrade(final BinanceApiRestClient binanceApiRestClient, BinanceSymbolInfoUtil symbolInfoUtil, Trade trade, Bar bar, double orderSize, User user, boolean debug) {
+    public void closeTrade(final BinanceApiRestClient binanceApiRestClient, BinanceSymbolInfoUtil symbolInfoUtil, Trade trade, Bar bar, String orderSize, User user, boolean debug) {
         String chatId = null;
         try {
             User u = user == null ? userRepository.findBySeqId(trade.getUserId()) : user;
@@ -132,7 +131,7 @@ public class OrderBinanceService implements OrderService<BinanceApiRestClient, B
             }
 
             Order buyOrder = trade.getOrders().get(0);
-            SymbolInfo symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(binanceApiRestClient, trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
+            SymbolInfoTO symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(binanceApiRestClient, trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
             double price = Double.parseDouble(binanceApiRestClient.getPrice(symbolInfo.getSymbol()).getPrice());
             long start = System.currentTimeMillis();
             long serverTime = binanceApiRestClient.getServerTime();

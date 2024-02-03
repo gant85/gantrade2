@@ -1,15 +1,16 @@
 package com.gant.trade.utility;
 
-import com.gant.trade.domain.SymbolInfo;
+
 import com.gant.trade.domain.Trade;
+import com.gant.trade.rest.model.SymbolInfoTO;
 
 public interface SymbolInfoUtil {
 
-    SymbolInfo getSymbolInfoByTrade(Trade trade);
+    SymbolInfoTO getSymbolInfoByTrade(Trade trade);
 
-    double getAmount(double price, SymbolInfo symbolInfo);
+    double getAmount(double price, SymbolInfoTO symbolInfo);
 
-    double getAmountPrecision(double amount, SymbolInfo symbolInfo);
+    double getAmountPrecision(double amount, SymbolInfoTO symbolInfo);
 
-    int getPrecision(SymbolInfo symbolInfo);
+    int getPrecision(SymbolInfoTO symbolInfo);
 }
