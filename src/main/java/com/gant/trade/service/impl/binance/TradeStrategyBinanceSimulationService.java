@@ -2,24 +2,30 @@ package com.gant.trade.service.impl.binance;
 
 import com.gant.binance.api.client.BinanceApiClientFactory;
 import com.gant.binance.api.client.BinanceApiRestClient;
-import com.gant.binance.api.client.domain.market.Candlestick;
 import com.gant.binance.api.client.domain.market.CandlestickInterval;
 import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
 import com.gant.trade.exception.StrategyNotFoundException;
+import com.gant.trade.model.Candlestick;
 import com.gant.trade.model.Timeframe;
 import com.gant.trade.model.TradeDirection;
+import com.gant.trade.model.mapper.CandlestickMapper;
 import com.gant.trade.mongo.repository.UserRepository;
 import com.gant.trade.mongo.service.StrategyService;
 import com.gant.trade.rest.model.*;
 import com.gant.trade.service.TradeStrategySimulationService;
-import com.gant.trade.utility.*;
+import com.gant.trade.utility.BarMerger;
+import com.gant.trade.utility.BarSeriesUtil;
+import com.gant.trade.utility.DecimalFormatUtil;
+import com.gant.trade.utility.TradeStrategyServiceUtil;
+import com.gant.trade.utility.impl.binance.BinanceSymbolInfoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
-import org.ta4j.core.*;
 import org.ta4j.core.Bar;
+import org.ta4j.core.*;
 import org.ta4j.core.num.DecimalNum;
 
 import java.math.BigDecimal;
@@ -40,8 +46,9 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
     private UserRepository userRepository;
     @Autowired
     private HistoricalCandlesBinanceService historicalCandlesBinanceService;
+    private BinanceSymbolInfoUtil symbolInfoUtil;
     @Autowired
-    SymbolInfoUtil symbolInfoUtil;
+    private CandlestickMapper candlestickMapper;
 
     private BinanceApiRestClient binanceApiRestClient;
     private StrategyTO strategyTO;
@@ -52,12 +59,16 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
     private List<StrategySimulation> strategySimulations;
     private double fee = 0D;
 
+    public TradeStrategyBinanceSimulationService(ApplicationContext applicationContext) {
+        this.symbolInfoUtil = new BinanceSymbolInfoUtil(applicationContext);
+    }
+
     public StrategySimulationResponse simulation(final StrategySimulationRequest strategySimulationRequest) {
         //TODO binanceApiRestClient se tramite UI cambio key e secret non si prende le modifiche, togliere if?
         if (this.binanceApiRestClient == null) {
             User user = userRepository.findBySeqId(strategySimulationRequest.getUserId());
-            ExchangeConfiguration userExchange = TradeStrategyServiceUtil.getExchangeConfigurationByExchange(user,Exchange.BINANCE);
-            if(userExchange!=null) {
+            ExchangeConfiguration userExchange = TradeStrategyServiceUtil.getExchangeConfigurationByExchange(user, Exchange.BINANCE);
+            if (userExchange != null) {
                 final BinanceApiClientFactory binanceApiClientFactory = BinanceApiClientFactory.newInstance(userExchange.getApiKey(), userExchange.getSecretKey());
                 this.binanceApiRestClient = binanceApiClientFactory.newRestClient();
             }
@@ -82,7 +93,7 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
                 throw new StrategyNotFoundException();
             }
             List<SymbolInfo> tradedCurrencies = strategyTO.getSymbolInfo().stream().map(symbol ->
-                    symbolInfoUtil.getSymbolInfoByExchange(Exchange.BINANCE,strategyTO.getUserId(),symbol.getSymbol(),symbol.getOrderSize().doubleValue()))
+                            symbolInfoUtil.getSymbolInfoByExchange(binanceApiRestClient, Exchange.BINANCE, strategyTO.getUserId(), symbol.getSymbol(), symbol.getOrderSize().doubleValue()))
                     .collect(Collectors.toList());
             long startTime = strategySimulationRequest.getStartDate().atStartOfDay().minusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
             long endTime = strategySimulationRequest.getStartDate().atStartOfDay().minusSeconds(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -114,7 +125,7 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
     }
 
     public List<Candlestick> getCandlesticks(SymbolInfo symbolInfo, LocalDate startDate, LocalDate endDate) {
-        List<Candlestick> candlesticks = new ArrayList<>();
+        List<com.gant.binance.api.client.domain.market.Candlestick> candlesticks = new ArrayList<>();
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.plusDays(1).atStartOfDay().minusSeconds(1);
         while (start.compareTo(end) <= 0) {
@@ -126,7 +137,7 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
             candlesticks.addAll(binanceApiRestClient.getCandlestickBars(symbolInfo.getSymbol(), CandlestickInterval.valueOf(Timeframe.ONE_MINUTE.name()), 1000, startTime, endTime));
             start = start.plusDays(1);
         }
-        return candlesticks;
+        return candlestickMapper.mapList(candlesticks);
     }
 
     public void barDoneCallback(final SymbolInfo symbolInfo, final Bar bar) {
@@ -148,9 +159,9 @@ public class TradeStrategyBinanceSimulationService implements TradeStrategySimul
         log.debug("{} symbolInfo={} price={} openTrade={}", strategyTO.getName(), symbolInfo.getSymbol(), bar.getClosePrice(), openTrade != null);
 
         if (openTrade == null && strategies.get(symbolInfo.getSymbol()).shouldEnter(endIndex)) {
-            openTrade = new Trade(strategyTO.getSeqId(),strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), symbolInfo.getOrderSize());
+            openTrade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), symbolInfo.getOrderSize());
             openTrade.setExpectedPriceOpen(bar.getClosePrice().doubleValue());
-            double amount = symbolInfoUtil.getAmount(bar.getClosePrice().doubleValue(),symbolInfo);
+            double amount = symbolInfoUtil.getAmount(bar.getClosePrice().doubleValue(), symbolInfo);
             openTrade.setAmount(amount);
             openTrade.setTradeState(TradeState.OPEN);
             openTrade.setInsertionTime(Date.from(bar.getEndTime().toInstant()));

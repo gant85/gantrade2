@@ -59,6 +59,12 @@ app:
       healthCheck: 5
       retryInSecond: 1
       maxRetry: 3
+      exchange:
+        bybit:
+          api:
+            base-path: https://api.bybit.com
+          web-socket:
+            base-path: wss://stream.bybit.com/v5/public/linear
   telegram:
     active: false
     username: ${GANTRADE_APP_TELEGRAM_USERNAME}

@@ -12,6 +12,7 @@ import com.gant.trade.service.TradeStrategyService;
 import com.gant.trade.service.impl.binance.StatusInfoService;
 import com.gant.trade.service.impl.binance.TradeStrategyBinanceService;
 import com.gant.trade.service.impl.binance.TradeStrategyBinanceSimulationService;
+import com.gant.trade.service.impl.bybit.TradeStrategyByBitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -111,15 +112,21 @@ public class StrategyService {
     }
 
     private void runStrategy(BotStrategy botStrategy, Strategy strategy) {
+        TradeStrategyService tradeStrategyService = null;
         switch (strategy.getExchange()) {
             case BINANCE:
-                TradeStrategyService tradeStrategyService = new TradeStrategyBinanceService(applicationContext, botStrategy.getDebug());
-                User user = userRepository.findBySeqId(strategy.getUserId());
-                tradeStrategyService.start(strategyMapper.convert(strategy), user);
-                tradeStrategyServiceMap.put(strategy.getSeqId(), tradeStrategyService);
+                tradeStrategyService = new TradeStrategyBinanceService(applicationContext, botStrategy.getDebug());
                 break;
             case COINBASE:
                 break;
+            case BYBIT:
+                tradeStrategyService = new TradeStrategyByBitService(applicationContext, botStrategy.getDebug());
+                break;
+        }
+        if (tradeStrategyService != null) {
+            User user = userRepository.findBySeqId(strategy.getUserId());
+            tradeStrategyService.start(strategyMapper.convert(strategy), user);
+            tradeStrategyServiceMap.put(strategy.getSeqId(), tradeStrategyService);
         }
     }
 

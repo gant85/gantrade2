@@ -1023,6 +1023,7 @@ components:
       enum:
         - BINANCE
         - COINBASE
+        - BYBIT
     StrategyStatusInfoTO:
       type: object
       properties:

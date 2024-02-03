@@ -1,14 +1,15 @@
 package com.gant.trade.service;
 
-import com.gant.binance.api.client.domain.event.CandlestickEvent;
 import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.domain.Trade;
 import com.gant.trade.domain.User;
+import com.gant.trade.model.CandlestickEvent;
 import com.gant.trade.model.Timeframe;
 import com.gant.trade.rest.model.StrategyStatusInfoTO;
 import com.gant.trade.rest.model.StrategyTO;
 import org.ta4j.core.Bar;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ public interface TradeStrategyService {
 
     void start(StrategyTO strategyTO, User user);
 
-    void registerCandles();
+    void registerCandles() throws IOException;
 
     void barDoneCallback(SymbolInfo symbolInfo, Bar bar);
 

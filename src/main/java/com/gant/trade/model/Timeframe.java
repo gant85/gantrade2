@@ -41,6 +41,8 @@ public enum Timeframe {
         return value;
     }
 
+    public Long getMinutes(){ return TimeUnit.MILLISECONDS.toMinutes(this.milliseconds);}
+
     public static Timeframe getTimeframe(String binanceString) {
         Timeframe[] timeframes = values();
         for (Timeframe timeframe : timeframes) {

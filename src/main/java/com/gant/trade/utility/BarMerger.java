@@ -20,12 +20,12 @@ import java.util.function.BiConsumer;
 @Slf4j
 public class BarMerger implements Closeable {
 
-    private Timeframe timeframe;
-    private BiConsumer<SymbolInfo, Bar> candleConsumer;
+    private final Timeframe timeframe;
+    private final BiConsumer<SymbolInfo, Bar> candleConsumer;
     private long timeframeBegin = -1;
     private double totalVolume = 0;
     private final List<BigDecimal> prices = new ArrayList<>();
-    private SymbolInfo symbolInfo;
+    private final SymbolInfo symbolInfo;
     private long lastTimestamp = -1;
     private boolean checkRulesEveryTime = false;
     private int checkRulesEveryTimeValue = 0;
@@ -62,16 +62,13 @@ public class BarMerger implements Closeable {
         totalVolume = totalVolume + volume.doubleValue();
 
         if (isBarFinal) {
-            if (prices.isEmpty()) {
-                log.error("Error: prices for series are empty: " + timeframeBegin);
-            }
 
             closeBar();
 
             while (timestamp >= timeframeBegin + timeframe.getMilliSeconds()) {
                 timeframeBegin = timeframeBegin + timeframe.getMilliSeconds();
             }
-        } else if (checkRulesEveryTime && !prices.isEmpty()) {
+        } else if (checkRulesEveryTime) {
             if (checkRulesEveryTimeValue == 0) {
                 candleConsumerAccept();
             } else {

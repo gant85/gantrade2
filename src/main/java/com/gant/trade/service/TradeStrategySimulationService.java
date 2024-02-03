@@ -1,7 +1,7 @@
 package com.gant.trade.service;
 
-import com.gant.binance.api.client.domain.market.Candlestick;
 import com.gant.trade.domain.SymbolInfo;
+import com.gant.trade.model.Candlestick;
 import com.gant.trade.rest.model.StrategySimulationRequest;
 import com.gant.trade.rest.model.StrategySimulationResponse;
 import org.ta4j.core.Bar;

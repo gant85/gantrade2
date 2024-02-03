@@ -1,7 +1,7 @@
 package com.gant.trade.utility;
 
-import com.gant.binance.api.client.domain.market.Candlestick;
 import com.gant.trade.domain.SymbolInfo;
+import com.gant.trade.model.Candlestick;
 import com.gant.trade.model.Timeframe;
 import lombok.extern.slf4j.Slf4j;
 import org.ta4j.core.Bar;
@@ -18,7 +18,8 @@ import java.util.Map;
 @Slf4j
 public class BarSeriesUtil {
 
-    private BarSeriesUtil(){}
+    private BarSeriesUtil() {
+    }
 
     public static void addBar(Map<String, BarSeries> barSeries, SymbolInfo symbolInfo, Bar bar, String strategyName) {
         BarSeries ts = barSeries.get(symbolInfo.getSymbol());

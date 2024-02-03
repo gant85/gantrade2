@@ -15,4 +15,5 @@ public class BotConfig {
     private Integer healthCheck = 14;
     private Integer retryInSecond = 1;
     private Integer maxRetry = 3;
+    private ExchangeConfig exchange;
 }

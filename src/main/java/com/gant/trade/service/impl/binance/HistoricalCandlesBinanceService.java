@@ -6,9 +6,11 @@ import com.gant.binance.api.client.domain.market.CandlestickInterval;
 import com.gant.trade.domain.SymbolInfo;
 import com.gant.trade.model.CandlestickSymbol;
 import com.gant.trade.model.Timeframe;
+import com.gant.trade.model.mapper.CandlestickMapper;
 import com.gant.trade.service.HistoricalCandlesService;
 import com.gant.trade.utility.BarSeriesUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
@@ -21,7 +23,10 @@ import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 @Component
-public class HistoricalCandlesBinanceService implements HistoricalCandlesService<BinanceApiRestClient,Candlestick> {
+public class HistoricalCandlesBinanceService implements HistoricalCandlesService<BinanceApiRestClient, Candlestick> {
+
+    @Autowired
+    private CandlestickMapper candlestickMapper;
 
     @Override
     public Map<CandlestickSymbol, BarSeries> requestHistoricalCandles(BinanceApiRestClient exchange, Timeframe timeframe, List<SymbolInfo> tradedCurrencies) {
@@ -50,7 +55,7 @@ public class HistoricalCandlesBinanceService implements HistoricalCandlesService
             }
             candlestickList.forEach(candlestick -> {
                 BarSeries barSeriesToAdd = barSeries.get(barSymbol);
-                Bar bar = BarSeriesUtil.convertCandlestick(candlestick, timeframe);
+                Bar bar = BarSeriesUtil.convertCandlestick(candlestickMapper.map(candlestick), timeframe);
                 try {
                     barSeriesToAdd.addBar(bar);
                     tickCountdown.countDown();

@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 
 public class TradeStrategy extends TradeStrategyFactory {
 
-    private StrategyTO strategyTO;
-    private ClosePriceIndicator closePriceIndicator;
+    private final StrategyTO strategyTO;
+    private final ClosePriceIndicator closePriceIndicator;
 
     public TradeStrategy(BarSeries barSeries, StrategyTO strategyTO) {
         super(barSeries);

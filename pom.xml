@@ -125,6 +125,11 @@
 			<artifactId>keycloak-admin-client</artifactId>
 			<version>14.0.0</version>
 		</dependency>
+		<dependency>
+			<groupId>io.reactivex.rxjava2</groupId>
+			<artifactId>rxjava</artifactId>
+			<version>2.1.14-RC1</version>
+		</dependency>
 
 		<!--TEST-->
 		<dependency>
@@ -200,17 +205,6 @@
 				<groupId>org.openapitools</groupId>
 				<artifactId>openapi-generator-maven-plugin</artifactId>
 				<version>${openapi-generator-maven-plugin.version}</version>
-				<configuration>
-					<generatorName>spring</generatorName>
-					<apiPackage>com.gant.trade.rest</apiPackage>
-					<modelPackage>com.gant.trade.rest.model</modelPackage>
-					<supportingFilesToGenerate>ApiUtil.java</supportingFilesToGenerate>
-					<generateModels>true</generateModels>
-					<configOptions>
-						<delegatePattern>true</delegatePattern>
-						<dateLibrary>java8-localdatetime</dateLibrary>
-					</configOptions>
-				</configuration>
 				<executions>
 					<execution>
 						<id>GanTradeApi</id>
@@ -219,6 +213,35 @@
 						</goals>
 						<configuration>
 							<inputSpec>${project.basedir}/src/main/resources/openapi/api.yaml</inputSpec>
+							<generatorName>spring</generatorName>
+							<apiPackage>com.gant.trade.rest</apiPackage>
+							<modelPackage>com.gant.trade.rest.model</modelPackage>
+							<supportingFilesToGenerate>ApiUtil.java</supportingFilesToGenerate>
+							<generateModels>true</generateModels>
+							<configOptions>
+								<delegatePattern>true</delegatePattern>
+								<dateLibrary>java8-localdatetime</dateLibrary>
+							</configOptions>
+						</configuration>
+					</execution>
+					<execution>
+						<id>BybitV5Api</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<inputSpec>${project.basedir}/src/main/resources/proxy/BybitV5Api.yaml</inputSpec>
+							<generatorName>java</generatorName>
+							<apiPackage>com.gant.trade.proxy.bytbit.v5</apiPackage>
+							<modelPackage>com.gant.trade.proxy.bytbit.v5.model</modelPackage>
+							<generateApiTests>false</generateApiTests>
+							<generateModelTests>false</generateModelTests>
+							<configOptions>
+								<java8>true</java8>
+								<library>resttemplate</library>
+								<dateLibrary>java8-localdatetime</dateLibrary>
+								<serializableModel>true</serializableModel>
+							</configOptions>
 						</configuration>
 					</execution>
 				</executions>

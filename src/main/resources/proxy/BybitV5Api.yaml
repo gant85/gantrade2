@@ -1,0 +1,869 @@
+openapi: 3.0.0
+# Added by API Auto Mocking Plugin
+info:
+  description: Bybit V5 API
+  version: "5.0.0"
+  title: Bybit V5 API
+  contact:
+    email: galasso.antonio.mail@gmail.com
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: Asset
+  - name: Position
+  - name: Market
+  - name: Order
+paths:
+  /v5/asset/transfer/universal-transfer:
+    post:
+      tags:
+        - Asset
+      summary: universal-transfer
+      operationId: universal-transfer
+      description: |
+        Transfer between sub-sub or main-sub.
+      parameters:
+        - $ref: '#/components/parameters/X-BAPI-API-KEY'
+        - $ref: '#/components/parameters/X-BAPI-SIGN'
+        - $ref: '#/components/parameters/X-BAPI-SIGN-TYPE'
+        - $ref: '#/components/parameters/X-BAPI-TIMESTAMP'
+        - $ref: '#/components/parameters/X-BAPI-RECV-WINDOW'
+      responses:
+        '200':
+          description: Transfer between sub-sub or main-sub.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UniversalTransferResponse'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UniversalTransferRequest'
+  /v5/asset/transfer/inter-transfer:
+    post:
+      tags:
+        - Asset
+      summary: inter-transfer
+      operationId: inter-transfer
+      description: |
+        Create the internal transfer between different account types under the same UID.
+      parameters:
+        - $ref: '#/components/parameters/X-BAPI-API-KEY'
+        - $ref: '#/components/parameters/X-BAPI-SIGN'
+        - $ref: '#/components/parameters/X-BAPI-SIGN-TYPE'
+        - $ref: '#/components/parameters/X-BAPI-TIMESTAMP'
+        - $ref: '#/components/parameters/X-BAPI-RECV-WINDOW'
+      responses:
+        '200':
+          description: |
+            internal transfer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterTransferResponse'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterTransferRequest'
+  /v5/asset/deposit/query-internal-record:
+    get:
+      tags:
+        - Asset
+      summary: query-internal-record
+      operationId: query-internal-record
+      description: |
+        Query deposit records within the Bybit platform. These transactions are not on the blockchain.
+      parameters:
+        - $ref: '#/components/parameters/X-BAPI-API-KEY'
+        - $ref: '#/components/parameters/X-BAPI-SIGN'
+        - $ref: '#/components/parameters/X-BAPI-SIGN-TYPE'
+        - $ref: '#/components/parameters/X-BAPI-TIMESTAMP'
+        - $ref: '#/components/parameters/X-BAPI-RECV-WINDOW'
+        - in: query
+          name: startTime
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: endTime
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: coin
+          schema:
+            type: string
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Transfer between sub-sub or main-sub.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryInternalRecordResponse'
+  /v5/asset/deposit/query-record:
+    get:
+      tags:
+        - Asset
+      summary: query-record
+      operationId: query-record
+      description: |
+        Query deposit records.
+      parameters:
+        - $ref: '#/components/parameters/X-BAPI-API-KEY'
+        - $ref: '#/components/parameters/X-BAPI-SIGN'
+        - $ref: '#/components/parameters/X-BAPI-SIGN-TYPE'
+        - $ref: '#/components/parameters/X-BAPI-TIMESTAMP'
+        - $ref: '#/components/parameters/X-BAPI-RECV-WINDOW'
+        - in: query
+          name: startTime
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: endTime
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: coin
+          schema:
+            type: string
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Transfer between sub-sub or main-sub.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryRecordResponse'
+  /v5/position/closed-pnl:
+    get:
+      tags:
+        - Position
+      summary: closed-pnl
+      operationId: closed-pnl
+      description: |
+        Query user's closed profit and loss records. The results are sorted by createdTime in descending order.
+      parameters:
+        - $ref: '#/components/parameters/X-BAPI-API-KEY'
+        - $ref: '#/components/parameters/X-BAPI-SIGN'
+        - $ref: '#/components/parameters/X-BAPI-SIGN-TYPE'
+        - $ref: '#/components/parameters/X-BAPI-TIMESTAMP'
+        - $ref: '#/components/parameters/X-BAPI-RECV-WINDOW'
+        - in: query
+          name: category
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: startTime
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: endTime
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: symbol
+          schema:
+            type: string
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Transfer between sub-sub or main-sub.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClosedPnlResponse'
+  /v5/market/kline:
+    get:
+      tags:
+        - Market
+      summary: get-kline
+      operationId: get-kline
+      description: |
+        Query for historical klines (also known as candles/candlesticks). Charts are returned in groups based on the requested interval.
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: symbol
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: interval
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: start
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: end
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: resp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetKlineResponse'
+  /v5/market/instruments-info:
+    get:
+      tags:
+        - Market
+      summary: instruments-info
+      operationId: instruments-info
+      description: |
+        Query for the instrument specification of online trading pairs.
+      parameters:
+        - in: query
+          name: category
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: symbol
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: baseCoin
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: cursor
+          schema:
+            type: string
+      responses:
+        '200':
+          description: resp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstrumentsInfoResponse'
+  /v5/market/tickers:
+    get:
+      tags:
+        - Market
+      summary: tickers
+      operationId: tickers
+      description: |
+        Get all latest information of symbols. All parameters are needed for OPTION
+      parameters:
+        - in: query
+          name: category
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: symbol
+          schema:
+            type: string
+        - in: query
+          name: expDate
+          schema:
+            type: string
+        - in: query
+          name: baseCoin
+          schema:
+            type: string
+      responses:
+        '200':
+          description: resp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TickersResponse'
+  /v5/order/create:
+    post:
+      tags:
+        - Order
+      summary: create-order
+      operationId: create-order
+      description: |
+        This endpoint supports to create the order for spot, spot margin, USDT perpetual, USDC perpetual, USDC futures, inverse futures and options.
+      parameters:
+        - $ref: '#/components/parameters/X-BAPI-API-KEY'
+        - $ref: '#/components/parameters/X-BAPI-SIGN'
+        - $ref: '#/components/parameters/X-BAPI-SIGN-TYPE'
+        - $ref: '#/components/parameters/X-BAPI-TIMESTAMP'
+        - $ref: '#/components/parameters/X-BAPI-RECV-WINDOW'
+      responses:
+        '200':
+          description: Transfer between sub-sub or main-sub.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreateResponse'
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+components:
+  parameters:
+    X-BAPI-API-KEY:
+      in: header
+      name: X-BAPI-API-KEY
+      schema:
+        type: string
+      required: true
+    X-BAPI-SIGN:
+      in: header
+      name: X-BAPI-SIGN
+      schema:
+        type: string
+      required: true
+    X-BAPI-SIGN-TYPE:
+      in: header
+      name: X-BAPI-SIGN-TYPE
+      schema:
+        type: string
+      required: true
+    X-BAPI-TIMESTAMP:
+      in: header
+      name: X-BAPI-TIMESTAMP
+      schema:
+        type: string
+      required: true
+    X-BAPI-RECV-WINDOW:
+      in: header
+      name: X-BAPI-RECV-WINDOW
+      schema:
+        type: string
+      required: true
+  schemas:
+    UniversalTransferRequest:
+      type: object
+      required:
+        - transferId
+        - coin
+        - amount
+        - fromMemberId
+        - toMemberId
+        - fromAccountType
+        - toAccountType
+      properties:
+        transferId:
+          type: string
+        coin:
+          type: string
+        amount:
+          type: string
+        fromMemberId:
+          type: integer
+          format: int64
+        toMemberId:
+          type: integer
+          format: int64
+        fromAccountType:
+          $ref: '#/components/schemas/AccountType'
+        toAccountType:
+          $ref: '#/components/schemas/AccountType'
+    RetCode:
+      type: integer
+      format: int64
+    RetMsg:
+      type: string
+    RetExtInfo:
+      type: object
+    Time:
+      type: integer
+      format: int64
+    UniversalTransferResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/UniversalTransferResult'
+    UniversalTransferResult:
+      type: object
+      properties:
+        transferId:
+          type: string
+    InterTransferRequest:
+      type: object
+      required:
+        - transferId
+        - coin
+        - amount
+        - fromAccountType
+        - toAccountType
+      properties:
+        transferId:
+          type: string
+        coin:
+          type: string
+        amount:
+          type: string
+        fromAccountType:
+          $ref: '#/components/schemas/AccountType'
+        toAccountType:
+          $ref: '#/components/schemas/AccountType'
+    InterTransferResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/InterTransferResult'
+    InterTransferResult:
+      type: object
+      properties:
+        transferId:
+          type: string
+    QueryInternalRecordResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/QueryInternalRecordResponseRows'
+    QueryInternalRecordResponseRows:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryInternalRecordResponseRow'
+        nextPageCursor:
+          type: string
+    QueryInternalRecordResponseRow:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: string
+        type:
+          type: integer
+          format: int64
+        coin:
+          type: string
+        address:
+          type: string
+        status:
+          type: integer
+          format: int64
+        createdTime:
+          type: string
+    QueryRecordResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/QueryRecordResponseRows'
+    QueryRecordResponseRows:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryRecordResponseRow'
+        nextPageCursor:
+          type: string
+    QueryRecordResponseRow:
+      type: object
+      properties:
+        coin:
+          type: string
+        chain:
+          type: string
+        amount:
+          type: string
+        txID:
+          type: string
+        status:
+          type: integer
+          format: int64
+        toAddress:
+          type: string
+        tag:
+          type: string
+        depositFee:
+          type: string
+        successAt:
+          type: string
+        confirmations:
+          type: string
+        txIndex:
+          type: string
+        blockHash:
+          type: string
+        batchReleaseLimit:
+          type: string
+        depositType:
+          type: integer
+          format: int64
+    AccountType:
+      type: string
+      enum:
+        - CONTRACT
+        - UNIFIED
+        - FUND
+    ClosedPnlResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/ClosedPnlResponseRows'
+    ClosedPnlResponseRows:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClosedPnlResponseRow'
+        category:
+          type: string
+        nextPageCursor:
+          type: string
+    ClosedPnlResponseRow:
+      type: object
+      properties:
+        symbol:
+          type: string
+        orderType:
+          type: string
+        leverage:
+          type: string
+        updatedTime:
+          type: string
+        side:
+          type: string
+        orderId:
+          type: string
+        closedPnl:
+          type: string
+        avgEntryPrice:
+          type: string
+        qty:
+          type: string
+        cumEntryValue:
+          type: string
+        createdTime:
+          type: string
+        orderPrice:
+          type: string
+        closedSize:
+          type: string
+        avgExitPrice:
+          type: string
+        execType:
+          type: string
+        fillCount:
+          type: string
+        cumExitValue:
+          type: string
+    GetKlineResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/GetKlineResponseRows'
+    GetKlineResponseRows:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetKlineResponseRow'
+        symbol:
+          type: string
+        category:
+          type: string
+        nextPageCursor:
+          type: string
+    GetKlineResponseRow:
+      type: array
+      items:
+        type: string
+    InstrumentsInfoResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/InstrumentsInfoResponseRows'
+    InstrumentsInfoResponseRows:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstrumentsInfoResponseRow'
+        category:
+          type: string
+        nextPageCursor:
+          type: string
+    InstrumentsInfoResponseRow:
+      type: object
+      properties:
+        symbol:
+          type: string
+        contractType:
+          type: string
+        status:
+          type: string
+        baseCoin:
+          type: string
+        quoteCoin:
+          type: string
+        launchTime:
+          type: string
+        deliveryTime:
+          type: string
+        deliveryFeeRate:
+          type: string
+        priceScale:
+          type: string
+        leverageFilter:
+          type: object
+          properties:
+            minLeverage:
+              type: string
+            maxLeverage:
+              type: string
+            leverageStep:
+              type: string
+        priceFilter:
+          type: object
+          properties:
+            minPrice:
+              type: string
+            maxPrice:
+              type: string
+            tickSize:
+              type: string
+        lotSizeFilter:
+          type: object
+          properties:
+            maxOrderQty:
+              type: string
+            minOrderQty:
+              type: string
+            qtyStep:
+              type: string
+            postOnlyMaxOrderQty:
+              type: string
+        unifiedMarginTrade:
+          type: string
+        fundingInterval:
+          type: integer
+          format: int64
+        settleCoin:
+          type: string
+    TickersResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/TickersResponseRows'
+    TickersResponseRows:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/TickersResponseRow'
+        category:
+          type: string
+        nextPageCursor:
+          type: string
+    TickersResponseRow:
+      type: object
+      properties:
+        symbol:
+          type: string
+        lastPrice:
+          type: string
+        indexPrice:
+          type: string
+        markPrice:
+          type: string
+        prevPrice24h:
+          type: string
+        price24hPcnt:
+          type: string
+        highPrice24h:
+          type: string
+        lowPrice24h:
+          type: string
+        prevPrice1h:
+          type: string
+        openInterest:
+          type: string
+        openInterestValue:
+          type: string
+        turnover24h:
+          type: string
+        volume24h:
+          type: string
+        fundingRate:
+          type: string
+        nextFundingTime:
+          type: string
+        predictedDeliveryPrice:
+          type: string
+        basisRate:
+          type: string
+        deliveryFeeRate:
+          type: string
+        deliveryTime:
+          type: string
+        ask1Size:
+          type: string
+        bid1Price:
+          type: string
+        ask1Price:
+          type: string
+        bid1Size:
+          type: string
+        basis:
+          type: string
+    OrderCreateResponse:
+      type: object
+      properties:
+        retCode:
+          $ref: '#/components/schemas/RetCode'
+        retMsg:
+          $ref: '#/components/schemas/RetMsg'
+        retExtInfo:
+          $ref: '#/components/schemas/RetExtInfo'
+        time:
+          $ref: '#/components/schemas/Time'
+        result:
+          $ref: '#/components/schemas/OrderCreateResponseRow'
+    OrderCreateResponseRow:
+      type: object
+      properties:
+        orderId:
+          type: string
+        orderLinkId:
+          type: string
+    OrderCreateRequest:
+      type: object
+      required:
+        - category
+        - symbol
+        - side
+        - orderType
+        - qty
+      properties:
+        category:
+          type: string
+        symbol:
+          type: string
+        isLeverage:
+          type: boolean
+        side:
+          type: string
+        orderType:
+          type: string
+        qty:
+          type: string
