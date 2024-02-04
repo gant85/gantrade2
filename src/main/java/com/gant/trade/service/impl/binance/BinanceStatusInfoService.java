@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class StatusInfoService {
+public class BinanceStatusInfoService {
 
     @Autowired
     private StrategyService strategyService;
@@ -38,7 +38,7 @@ public class StatusInfoService {
 
     private final BinanceSymbolInfoUtil symbolInfoUtil;
 
-    public StatusInfoService(ApplicationContext applicationContext) {
+    public BinanceStatusInfoService(ApplicationContext applicationContext) {
         symbolInfoUtil = new BinanceSymbolInfoUtil(applicationContext);
     }
 

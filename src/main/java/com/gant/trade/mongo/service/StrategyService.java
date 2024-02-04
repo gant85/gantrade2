@@ -9,7 +9,7 @@ import com.gant.trade.mongo.repository.StrategyRepository;
 import com.gant.trade.mongo.repository.UserRepository;
 import com.gant.trade.rest.model.*;
 import com.gant.trade.service.TradeStrategyService;
-import com.gant.trade.service.impl.binance.StatusInfoService;
+import com.gant.trade.service.impl.binance.BinanceStatusInfoService;
 import com.gant.trade.service.impl.binance.TradeStrategyBinanceService;
 import com.gant.trade.service.impl.binance.TradeStrategyBinanceSimulationService;
 import com.gant.trade.service.impl.bybit.TradeStrategyByBitService;
@@ -40,7 +40,7 @@ public class StrategyService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private StatusInfoService statusInfoService;
+    private BinanceStatusInfoService binanceStatusInfoService;
 
     @Autowired
     private SequenceGeneratorService sequenceGeneratorService;
@@ -61,7 +61,7 @@ public class StrategyService {
         if (tradeStrategyService != null && tradeStrategyService.status()) {
             return tradeStrategyService.getStrategyStatusInfoToList();
         } else {
-            return statusInfoService.getStrategyStatusInfoToList(id);
+            return binanceStatusInfoService.getStrategyStatusInfoToList(id);
         }
     }
 

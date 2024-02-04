@@ -9,8 +9,6 @@ import com.gant.trade.mongo.repository.OrderRepository;
 import com.gant.trade.mongo.repository.UserRepository;
 import com.gant.trade.mongo.service.TradeService;
 import com.gant.trade.proxy.bybit.v5.ByBitProxy;
-import com.gant.trade.proxy.bytbit.v5.model.TickersResponse;
-import com.gant.trade.proxy.bytbit.v5.model.TickersResponseRow;
 import com.gant.trade.rest.model.SymbolInfoTO;
 import com.gant.trade.rest.model.TradeState;
 import com.gant.trade.service.OrderService;
@@ -52,7 +50,7 @@ public class OrderByBitService implements OrderService<ByBitProxy, ByBitSymbolIn
             }
 
             symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(exchange, trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
-            double price = getPrice(exchange, symbolInfo);
+            double price = exchange.getByBitMarketProxy().getPrice(symbolInfo.getSymbol());
             double amount = symbolInfoUtil.getAmount(price, symbolInfo);
             /*
             NewOrder newOrder = new NewOrder(symbolInfo.getSymbol(), com.gant.binance.api.client.domain.OrderSide.BUY, OrderType.MARKET, null, String.valueOf(amount));
@@ -120,7 +118,7 @@ public class OrderByBitService implements OrderService<ByBitProxy, ByBitSymbolIn
 
             Order buyOrder = trade.getOrders().get(0);
             SymbolInfoTO symbolInfo = symbolInfoUtil.getSymbolInfoByExchange(exchange, trade.getExchange(), trade.getUserId(), trade.getSymbol(), orderSize);
-            double price = getPrice(exchange, symbolInfo);
+            double price = exchange.getByBitMarketProxy().getPrice(symbolInfo.getSymbol());
             /*
             long start = System.currentTimeMillis();
             long serverTime = binanceApiRestClient.getServerTime();
@@ -199,15 +197,5 @@ public class OrderByBitService implements OrderService<ByBitProxy, ByBitSymbolIn
         } finally {
             tradeService.save(trade);
         }
-    }
-
-    private Double getPrice(ByBitProxy exchange, SymbolInfoTO symbolInfo) {
-        TickersResponse tickersResponse = exchange.getByBitMarketProxy().tickers("linear", symbolInfo.getSymbol(), null, null);
-        assert tickersResponse.getResult() != null;
-        assert tickersResponse.getResult().getList() != null;
-        TickersResponseRow tickersResponseRow = tickersResponse.getResult().getList().stream().findFirst().orElse(null);
-        assert tickersResponseRow != null;
-        assert tickersResponseRow.getLastPrice() != null;
-        return Double.parseDouble(tickersResponseRow.getLastPrice());
     }
 }

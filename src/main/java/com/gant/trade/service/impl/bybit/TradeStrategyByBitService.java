@@ -12,7 +12,6 @@ import com.gant.trade.proxy.bybit.v5.ByBitProxy;
 import com.gant.trade.rest.model.*;
 import com.gant.trade.service.TelegramBotService;
 import com.gant.trade.service.TradeStrategyService;
-import com.gant.trade.service.impl.binance.StatusInfoService;
 import com.gant.trade.utility.BarMerger;
 import com.gant.trade.utility.BarSeriesUtil;
 import com.gant.trade.utility.TradeStrategyServiceUtil;
@@ -50,7 +49,7 @@ public class TradeStrategyByBitService implements TradeStrategyService {
     private final HistoricalCandlesByBitService historicalCandlesByBitService;
     private final ByBitSymbolInfoUtil symbolInfoUtil;
     private final UserService userService;
-    private final StatusInfoService statusInfoService;
+    private final ByBitStatusInfoService statusInfoService;
     private StrategyTO strategyTO;
     private Timeframe timeframe;
     private Map<String, BarMerger> candleMerger;
@@ -75,7 +74,7 @@ public class TradeStrategyByBitService implements TradeStrategyService {
         this.historicalCandlesByBitService = applicationContext.getBean(HistoricalCandlesByBitService.class);
         this.symbolInfoUtil = new ByBitSymbolInfoUtil(applicationContext);
         this.userService = applicationContext.getBean(UserService.class);
-        this.statusInfoService = applicationContext.getBean(StatusInfoService.class);
+        this.statusInfoService = applicationContext.getBean(ByBitStatusInfoService.class);
         this.debug = debug;
     }
 
@@ -199,7 +198,7 @@ public class TradeStrategyByBitService implements TradeStrategyService {
     public void openOrder(SymbolInfoTO symbolInfo, Bar bar) {
         log.info("{} openOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
         Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), Double.parseDouble(symbolInfo.getOrderSize()));
-        tradeService.addTradeToOpenTradeList(trades, trade, symbolInfo);
+        tradeService.addTradeToOpenTradeList(trades, trade);
         orderByBitService.openTrade(byBitProxy, symbolInfoUtil, trade, bar, symbolInfo.getOrderSize(), user, debug);
     }
 
@@ -252,7 +251,6 @@ public class TradeStrategyByBitService implements TradeStrategyService {
 
     @Override
     public List<StrategyStatusInfoTO> getStrategyStatusInfoToList() {
-        // return statusInfoService.getStrategyStatusInfoToList(strategyTO, barSeries, byBitMarketProxy);
-        return null;
+        return statusInfoService.getStrategyStatusInfoToList(strategyTO, barSeries, byBitProxy);
     }
 }

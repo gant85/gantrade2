@@ -9,7 +9,6 @@ import com.gant.trade.mongo.repository.StrategyRepository;
 import com.gant.trade.mongo.repository.TradeRepository;
 import com.gant.trade.mongo.repository.UserRepository;
 import com.gant.trade.rest.model.*;
-import com.gant.trade.utility.SymbolInfoUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,16 +36,12 @@ public class TradeService {
     @Autowired
     private StrategyRepository strategyRepository;
 
-    @Autowired
-    private SymbolInfoUtil symbolInfoUtil;
-
     public Map<String, List<Trade>> getOpenTradesByStrategy(long stratedyId) {
         Map<String, List<Trade>> trades = new HashMap<>();
 
         List<Long> ids = Collections.singletonList(stratedyId);
         tradeRepository.findByTradeStateAndStrategyIdIn(TradeState.OPEN, ids).forEach(trade -> {
-            SymbolInfoTO symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
-            addTradeToOpenTradeList(trades, trade, symbolInfo);
+            addTradeToOpenTradeList(trades, trade);
         });
 
         return trades;
@@ -60,9 +55,7 @@ public class TradeService {
     }
 
     public void removeTradeToOpenTradeList(Map<String, List<Trade>> trades, Trade trade) {
-        SymbolInfoTO symbolInfo = symbolInfoUtil.getSymbolInfoByTrade(trade);
-
-        List<Trade> list = trades.get(symbolInfo.getSymbol());
+        List<Trade> list = trades.get(trade.getSymbol());
         if (list != null) {
             list.removeIf(t -> t.getId().equals(trade.getId()));
         }
@@ -106,11 +99,11 @@ public class TradeService {
         }
     }
 
-    public void addTradeToOpenTradeList(Map<String, List<Trade>> trades, Trade trade, SymbolInfoTO symbolInfo) {
-        if (!trades.containsKey(symbolInfo.getSymbol())) {
-            trades.put(symbolInfo.getSymbol(), new ArrayList<>());
+    public void addTradeToOpenTradeList(Map<String, List<Trade>> trades, Trade trade) {
+        if (!trades.containsKey(trade.getSymbol())) {
+            trades.put(trade.getSymbol(), new ArrayList<>());
         }
-        trades.get(symbolInfo.getSymbol()).add(trade);
+        trades.get(trade.getSymbol()).add(trade);
     }
 
     public TradeListTO tradeList(Integer userId, Integer pageSize, Integer pageIndex) {

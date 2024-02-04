@@ -51,7 +51,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
     private final HistoricalCandlesBinanceService historicalCandlesBinanceService;
     private final BinanceSymbolInfoUtil symbolInfoUtil;
     private final UserService userService;
-    private final StatusInfoService statusInfoService;
+    private final BinanceStatusInfoService binanceStatusInfoService;
 
     private BinanceApiRestClient binanceApiRestClient;
     private BinanceApiWebSocketClient binanceApiWebSocketClient;
@@ -80,7 +80,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
         this.historicalCandlesBinanceService = applicationContext.getBean(HistoricalCandlesBinanceService.class);
         this.symbolInfoUtil = new BinanceSymbolInfoUtil(applicationContext);
         this.userService = applicationContext.getBean(UserService.class);
-        this.statusInfoService = applicationContext.getBean(StatusInfoService.class);
+        this.binanceStatusInfoService = applicationContext.getBean(BinanceStatusInfoService.class);
         this.debug = debug;
         this.candlestickEventMapper = applicationContext.getBean(CandlestickEventMapper.class);
     }
@@ -214,7 +214,7 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
     public void openOrder(SymbolInfoTO symbolInfo, final Bar bar) {
         log.info("{} openOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
         Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), Double.parseDouble(symbolInfo.getOrderSize()));
-        tradeService.addTradeToOpenTradeList(trades, trade, symbolInfo);
+        tradeService.addTradeToOpenTradeList(trades, trade);
         orderBinanceService.openTrade(binanceApiRestClient, symbolInfoUtil, trade, bar, symbolInfo.getOrderSize(), user, debug);
     }
 
@@ -261,6 +261,6 @@ public class TradeStrategyBinanceService implements TradeStrategyService {
 
     @Override
     public List<StrategyStatusInfoTO> getStrategyStatusInfoToList() {
-        return statusInfoService.getStrategyStatusInfoToList(strategyTO, barSeries, binanceApiRestClient);
+        return binanceStatusInfoService.getStrategyStatusInfoToList(strategyTO, barSeries, binanceApiRestClient);
     }
 }

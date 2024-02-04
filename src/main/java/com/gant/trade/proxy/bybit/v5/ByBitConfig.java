@@ -25,22 +25,26 @@ public class ByBitConfig {
     }
 
     @Bean
+    @Primary
     public AssetApi byBitAssetApi(ApiClient byBitApiClient) {
         return new AssetApi(byBitApiClient);
     }
 
 
     @Bean
+    @Primary
     public MarketApi byBitMarketApi(ApiClient byBitApiClient) {
         return new MarketApi(byBitApiClient);
     }
 
     @Bean
+    @Primary
     public PositionApi byBitPositionApi(ApiClient byBitApiClient) {
         return new PositionApi(byBitApiClient);
     }
 
     @Bean
+    @Primary
     public OrderApi byBitOrderApi(ApiClient byBitApiClient) {
         return new OrderApi(byBitApiClient);
     }
