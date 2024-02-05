@@ -48,7 +48,7 @@ public class ByBitStatusInfoService {
     public List<StrategyStatusInfoTO> getStrategyStatusInfoToList(Long seqId) throws NoSuchAlgorithmException, InvalidKeyException {
         StrategyTO strategyTO = strategyService.getStrategyById(seqId);
         User user = userRepository.findBySeqId(strategyTO.getUserId());
-        ExchangeConfiguration userExchange = TradeStrategyServiceUtil.getExchangeConfigurationByExchange(user, Exchange.BINANCE);
+        ExchangeConfiguration userExchange = TradeStrategyServiceUtil.getExchangeConfigurationByExchange(user, strategyTO.getExchange());
         if (userExchange == null) {
             return Collections.emptyList();
         }

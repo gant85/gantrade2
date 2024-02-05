@@ -44,8 +44,13 @@ public class TradeStrategyByBitService extends TradeStrategyServiceImpl {
 
     @Override
     public boolean unsubscribe() {
-        klinesSubscriber.dispose();
-        return true;
+        try {
+            klinesSubscriber.dispose();
+            return true;
+        } catch (Exception e) {
+            log.error("klinesSubscriber", e);
+            return false;
+        }
     }
 
     @Override

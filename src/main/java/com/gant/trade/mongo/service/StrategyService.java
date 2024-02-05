@@ -3,6 +3,7 @@ package com.gant.trade.mongo.service;
 import com.gant.trade.domain.Strategy;
 import com.gant.trade.domain.User;
 import com.gant.trade.domain.mapper.StrategyMapper;
+import com.gant.trade.exception.BusinessRuntimeException;
 import com.gant.trade.exception.StrategyAlreadyExistException;
 import com.gant.trade.exception.StrategyNotFoundException;
 import com.gant.trade.mongo.repository.StrategyRepository;
@@ -13,6 +14,7 @@ import com.gant.trade.service.impl.binance.BinanceStatusInfoService;
 import com.gant.trade.service.impl.binance.TradeStrategyBinanceService;
 import com.gant.trade.service.impl.binance.TradeStrategyBinanceSimulationService;
 import com.gant.trade.service.impl.bybit.TradeStrategyByBitService;
+import com.gant.trade.service.impl.bybit.TradeStrategyByBitSimulationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -30,7 +32,9 @@ import java.util.*;
 public class StrategyService {
 
     @Autowired
-    private TradeStrategyBinanceSimulationService tradeStrategySimulationService;
+    private TradeStrategyBinanceSimulationService tradeStrategyBinanceSimulationService;
+    @Autowired
+    private TradeStrategyByBitSimulationService tradeStrategyByBitSimulationService;
     @Autowired
     private StrategyRepository strategyRepository;
     @Autowired
@@ -41,7 +45,6 @@ public class StrategyService {
     private UserRepository userRepository;
     @Autowired
     private BinanceStatusInfoService binanceStatusInfoService;
-
     @Autowired
     private SequenceGeneratorService sequenceGeneratorService;
 
@@ -99,7 +102,6 @@ public class StrategyService {
 
     public void startBot(BotStrategy botStrategy) {
         Strategy strategy = getStrategy(botStrategy);
-        // TODO rimuovere in futuro, troppe strategie non vanno bene nell'hashmap
         TradeStrategyService tradeStrategyService = tradeStrategyServiceMap.get(strategy.getSeqId());
         if (tradeStrategyService != null) {
             tradeStrategyService.stop();
@@ -178,12 +180,12 @@ public class StrategyService {
         return strategyListTO;
     }
 
-    public StrategySimulationResponse strategySimulation(StrategySimulationRequest strategySimulationRequest) {
+    public StrategySimulationResponse strategySimulation(StrategySimulationRequest strategySimulationRequest) throws BusinessRuntimeException {
         switch (strategySimulationRequest.getExchange()) {
             case BINANCE:
-                return tradeStrategySimulationService.simulation(strategySimulationRequest);
-            case COINBASE:
-                return null;
+                return tradeStrategyBinanceSimulationService.simulation(strategySimulationRequest);
+            case BYBIT:
+                return tradeStrategyByBitSimulationService.simulation(strategySimulationRequest);
             default:
                 return null;
         }

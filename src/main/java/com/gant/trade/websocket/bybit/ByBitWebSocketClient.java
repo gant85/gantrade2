@@ -1,6 +1,7 @@
 package com.gant.trade.websocket.bybit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gant.trade.exception.BusinessRuntimeException;
 import com.gant.trade.model.CandlestickEvent;
 import com.gant.trade.model.Timeframe;
 import com.gant.trade.proxy.bybit.v5.BybitEncryption;
@@ -33,16 +34,20 @@ public class ByBitWebSocketClient {
     private ObservableEmitter<CandlestickEvent> emitterKline;
     private final TopicKLineDataMapper topicKLineDataMapper = new TopicKLineDataMapperImpl();
 
-    public ByBitWebSocketClient(String url, BybitEncryption bybitEncryption) throws URISyntaxException, DeploymentException, IOException {
+    public ByBitWebSocketClient(String url, BybitEncryption bybitEncryption) throws BusinessRuntimeException {
         this.url = url;
         this.bybitEncryption = bybitEncryption;
         this.objectMapper = new ObjectMapper();
         connect();
     }
 
-    public void connect() throws URISyntaxException, DeploymentException, IOException {
+    public void connect() throws BusinessRuntimeException {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        container.connectToServer(this, new URI(url));
+        try {
+            container.connectToServer(this, new URI(url));
+        } catch (URISyntaxException | DeploymentException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @OnOpen

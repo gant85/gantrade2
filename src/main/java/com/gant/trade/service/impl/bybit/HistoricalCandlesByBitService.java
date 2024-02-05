@@ -1,5 +1,6 @@
 package com.gant.trade.service.impl.bybit;
 
+import com.gant.trade.exception.BusinessRuntimeException;
 import com.gant.trade.model.Candlestick;
 import com.gant.trade.model.CandlestickSymbol;
 import com.gant.trade.model.Timeframe;
@@ -14,8 +15,6 @@ import org.ta4j.core.Bar;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeries;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -25,12 +24,12 @@ import java.util.concurrent.CountDownLatch;
 @Component
 public class HistoricalCandlesByBitService implements HistoricalCandlesService<ByBitProxy, Candlestick> {
     @Override
-    public Map<CandlestickSymbol, BarSeries> requestHistoricalCandles(ByBitProxy exchange, Timeframe timeframe, List<SymbolInfoTO> tradedCurrencies) throws NoSuchAlgorithmException, InvalidKeyException {
+    public Map<CandlestickSymbol, BarSeries> requestHistoricalCandles(ByBitProxy exchange, Timeframe timeframe, List<SymbolInfoTO> tradedCurrencies) throws BusinessRuntimeException {
         return requestHistoricalCandles(exchange, timeframe, tradedCurrencies, null, null);
     }
 
     @Override
-    public Map<CandlestickSymbol, BarSeries> requestHistoricalCandles(ByBitProxy exchange, Timeframe timeframe, List<SymbolInfoTO> tradedCurrencies, Long startTime, Long endTime) throws NoSuchAlgorithmException, InvalidKeyException {
+    public Map<CandlestickSymbol, BarSeries> requestHistoricalCandles(ByBitProxy exchange, Timeframe timeframe, List<SymbolInfoTO> tradedCurrencies, Long startTime, Long endTime) throws BusinessRuntimeException {
         log.info("Request historical candles");
 
         Map<CandlestickSymbol, BarSeries> barSeries = new HashMap<>();
@@ -66,12 +65,12 @@ public class HistoricalCandlesByBitService implements HistoricalCandlesService<B
     }
 
     @Override
-    public List<Candlestick> getCandlestickBars(ByBitProxy exchange, Timeframe timeframe, SymbolInfoTO symbolInfo) throws NoSuchAlgorithmException, InvalidKeyException {
+    public List<Candlestick> getCandlestickBars(ByBitProxy exchange, Timeframe timeframe, SymbolInfoTO symbolInfo) throws BusinessRuntimeException {
         return getCandlestickBars(exchange, timeframe, symbolInfo, null, null);
     }
 
     @Override
-    public List<Candlestick> getCandlestickBars(ByBitProxy exchange, Timeframe timeframe, SymbolInfoTO symbolInfo, Long startTime, Long endTime) throws NoSuchAlgorithmException, InvalidKeyException {
+    public List<Candlestick> getCandlestickBars(ByBitProxy exchange, Timeframe timeframe, SymbolInfoTO symbolInfo, Long startTime, Long endTime) throws BusinessRuntimeException {
         List<Candlestick> list = new ArrayList<>();
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();

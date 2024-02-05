@@ -1,8 +1,8 @@
 package com.gant.trade.service.impl.binance;
 
 import com.gant.binance.api.client.BinanceApiRestClient;
-import com.gant.binance.api.client.domain.market.Candlestick;
 import com.gant.binance.api.client.domain.market.CandlestickInterval;
+import com.gant.trade.model.Candlestick;
 import com.gant.trade.model.CandlestickSymbol;
 import com.gant.trade.model.Timeframe;
 import com.gant.trade.model.mapper.CandlestickMapper;
@@ -55,7 +55,7 @@ public class HistoricalCandlesBinanceService implements HistoricalCandlesService
             }
             candlestickList.forEach(candlestick -> {
                 BarSeries barSeriesToAdd = barSeries.get(barSymbol);
-                Bar bar = BarSeriesUtil.convertCandlestick(candlestickMapper.map(candlestick), timeframe);
+                Bar bar = BarSeriesUtil.convertCandlestick(candlestick, timeframe);
                 try {
                     barSeriesToAdd.addBar(bar);
                     tickCountdown.countDown();
@@ -77,9 +77,9 @@ public class HistoricalCandlesBinanceService implements HistoricalCandlesService
     @Override
     public List<Candlestick> getCandlestickBars(BinanceApiRestClient exchange, Timeframe timeframe, SymbolInfoTO symbolInfo, Long startTime, Long endTime) {
         if (startTime != null && endTime != null) {
-            return exchange.getCandlestickBars(symbolInfo.getSymbol(), CandlestickInterval.valueOf(timeframe.name()), 500, startTime, endTime);
+            return candlestickMapper.mapList(exchange.getCandlestickBars(symbolInfo.getSymbol(), CandlestickInterval.valueOf(timeframe.name()), 500, startTime, endTime));
         } else {
-            return exchange.getCandlestickBars(symbolInfo.getSymbol(), CandlestickInterval.valueOf(timeframe.name()));
+            return candlestickMapper.mapList(exchange.getCandlestickBars(symbolInfo.getSymbol(), CandlestickInterval.valueOf(timeframe.name())));
         }
     }
 }

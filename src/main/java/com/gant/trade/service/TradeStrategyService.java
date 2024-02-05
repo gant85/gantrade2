@@ -48,8 +48,6 @@ public interface TradeStrategyService {
 
     StrategyTO getStrategyTO();
 
-    Timeframe getTimeframe();
-
     boolean isDebug();
 
     List<StrategyStatusInfoTO> getStrategyStatusInfoToList();

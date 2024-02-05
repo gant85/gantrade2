@@ -196,7 +196,7 @@ public class TradeStrategyServiceImpl implements TradeStrategyService {
     @Override
     public void openOrder(SymbolInfoTO symbolInfo, Bar bar) {
         log.info("{} openOrder: symbolInfo={} lastClosePrice={}", strategyTO.getName(), symbolInfo, bar.getClosePrice());
-        Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), Exchange.BINANCE, TradeDirection.LONG.name(), symbolInfo.getSymbol(), Double.parseDouble(symbolInfo.getOrderSize()));
+        Trade trade = new Trade(strategyTO.getSeqId(), strategyTO.getUserId(), strategyTO.getExchange(), TradeDirection.LONG.name(), symbolInfo.getSymbol(), Double.parseDouble(symbolInfo.getOrderSize()));
         tradeService.addTradeToOpenTradeList(trades, trade);
         openOrderExchange(symbolInfo, bar, trade);
     }
@@ -244,11 +244,6 @@ public class TradeStrategyServiceImpl implements TradeStrategyService {
     @Override
     public StrategyTO getStrategyTO() {
         return strategyTO;
-    }
-
-    @Override
-    public Timeframe getTimeframe() {
-        return timeframe;
     }
 
     @Override
