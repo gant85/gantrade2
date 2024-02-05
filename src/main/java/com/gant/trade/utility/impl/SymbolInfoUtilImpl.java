@@ -12,10 +12,14 @@ import com.gant.trade.rest.model.SymbolInfoTO;
 import com.gant.trade.utility.DecimalFormatUtil;
 import com.gant.trade.utility.SymbolInfoUtil;
 import com.gant.trade.utility.TradeStrategyServiceUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 
 import java.util.Locale;
 
+@Slf4j
+@Component
 public class SymbolInfoUtilImpl<T> implements SymbolInfoUtil {
 
     private final UserRepository userRepository;

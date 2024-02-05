@@ -60,7 +60,7 @@ public class TelegramBotServiceImpl extends TelegramLongPollingBot implements Te
     private TradeMapper tradeMapper;
 
     @Autowired
-    SymbolInfoUtil symbolInfoUtil;
+    private SymbolInfoUtil symbolInfoUtil;
 
     @Override
     public void onUpdateReceived(Update update) {

@@ -20,7 +20,15 @@ public interface TradeStrategyService {
 
     boolean stop();
 
+    boolean unsubscribe();
+
     void start(StrategyTO strategyTO, User user);
+
+    void exchangeConfiguration() throws Exception;
+
+    List<SymbolInfoTO> getCurrencies();
+
+    void requestHistoricalCandles() throws Exception;
 
     void registerCandles() throws IOException;
 

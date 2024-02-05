@@ -30,7 +30,6 @@ public class ByBitWebSocketClient {
     private final String url;
     private final ObjectMapper objectMapper;
     private Session session;
-    private Observable<CandlestickEvent> observableKline;
     private ObservableEmitter<CandlestickEvent> emitterKline;
     private final TopicKLineDataMapper topicKLineDataMapper = new TopicKLineDataMapperImpl();
 
@@ -101,9 +100,8 @@ public class ByBitWebSocketClient {
     }
 
     public Observable<CandlestickEvent> subscribeKlines(List<SymbolInfoTO> symbolInfo, Timeframe timeframe) throws IOException {
-        observableKline = Observable.<CandlestickEvent>create(e -> {
-            emitterKline = e;
-        }).doOnDispose(() -> {
+        Observable<CandlestickEvent> observableKline = Observable.<CandlestickEvent>create(e -> emitterKline = e).doOnDispose(() -> {
+            log.info("observableKline disposed");
         });
         Object[] subscriptions = symbolInfo.stream().map(s -> "kline.".concat(String.valueOf(timeframe.getMinutes()).concat(".").concat(s.getSymbol()))).toArray();
         Map<String, Object> subscriptionMessage = new HashMap<>();
